@@ -23,7 +23,7 @@ go get github.com/jaytaylor/html2text
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/jaytaylor/html2text"
 )
@@ -47,8 +47,41 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("input: %s\n\noutput: %s\n", inputHtml, text)
+	fmt.Printf("input:\n\n%s\n\noutput:\n\n%s\n", inputHtml, text)
 }
+```
+
+Output:
+```
+input:
+
+    <div class="hard-to-read">
+        Welcome to your new account on my service!
+    </div>
+
+    <p>
+        Here is some more information:
+
+        <ul>
+            <li>Link 1: <a href="https://example.com">Example.com</a></li>
+            <li>Link 2: <a href="https://example.com">Example.com</a></li>
+            <li>Something else</li>
+        </ul>
+    </p>
+
+output:
+
+Welcome to your new account on my service!
+
+Here is some more information:
+
+Link 1:
+https://example.com
+
+Link 2:
+https://example.com
+
+Something else
 ```
 
 
