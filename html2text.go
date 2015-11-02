@@ -38,6 +38,31 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 		case atom.Br:
 			return ctx.Emit("\n")
 
+		case atom.H1, atom.H2, atom.H3:
+			subCtx := textifyTraverseCtx{}
+			if err := subCtx.TraverseChildren(node); err != nil {
+				return err
+			}
+
+			str := subCtx.Buf.String()
+			dividerLen := 0
+			for _, line := range strings.Split(str, "\n") {
+				if lineLen := len([]rune(line)); lineLen-1 > dividerLen {
+					dividerLen = lineLen - 1
+				}
+			}
+			divider := ""
+			if node.DataAtom == atom.H1 {
+				divider = strings.Repeat("*", dividerLen)
+			} else {
+				divider = strings.Repeat("-", dividerLen)
+			}
+
+			if node.DataAtom == atom.H3 {
+				return ctx.Emit("\n\n" + str + "\n" + divider + "\n\n")
+			}
+			return ctx.Emit("\n\n" + divider + "\n" + str + "\n" + divider + "\n\n")
+
 		case atom.Li:
 			if err := ctx.Emit("* "); err != nil {
 				return err

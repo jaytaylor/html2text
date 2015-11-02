@@ -249,6 +249,49 @@ func TestImageAltTags(t *testing.T) {
 	}
 }
 
+func TestHeadings(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<h1>Test</h1>",
+			"****\nTest\n****",
+		},
+		{
+			"\t<h1>\nTest</h1> ",
+			"****\nTest\n****",
+		},
+		{
+			"\t<h1>\nTest line 1<br>Test 2</h1> ",
+			"***********\nTest line 1\nTest 2\n***********",
+		},
+		{
+			"<h1>Test</h1> <h1>Test</h1>",
+			"****\nTest\n****\n\n****\nTest\n****",
+		},
+		{
+			"<h2>Test</h2>",
+			"----\nTest\n----",
+		},
+		{
+			"<h1><a href='http://example.com/'>Test</a></h1>",
+			"****************************\nTest ( http://example.com/ )\n****************************",
+		},
+		{
+			"<h3> <span class='a'>Test </span></h3>",
+			"Test\n----",
+		},
+	}
+
+	for _, testCase := range testCases {
+		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
+		assertString(t, testCase.input, testCase.output)
+		fmt.Printf("\n\n")
+	}
+
+}
+
 func TestText(t *testing.T) {
 	testCases := []struct {
 		input string
