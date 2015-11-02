@@ -50,17 +50,18 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 			return ctx.Emit("\n")
 
 		case atom.A:
-			if err := ctx.TraverseChildren(node); err != nil {
+			// If image is the only child, take its alt text as the link text
+			if img := node.FirstChild; img != nil && node.LastChild == img && img.DataAtom == atom.Img {
+				if altText := getAttrVal(img, "alt"); altText != "" {
+					ctx.Emit(altText)
+				}
+			} else if err := ctx.TraverseChildren(node); err != nil {
 				return err
 			}
 
 			hrefLink := ""
-			for _, attr := range node.Attr {
-				if attr.Key != "href" {
-					continue
-				}
-
-				attrVal := ctx.NormalizeHrefLink(attr.Val)
+			if attrVal := getAttrVal(node, "href"); attrVal != "" {
+				attrVal = ctx.NormalizeHrefLink(attrVal)
 				if attrVal != "" {
 					hrefLink = "( " + attrVal + " )"
 				}
@@ -115,6 +116,16 @@ func (ctx *textifyTraverseCtx) NormalizeHrefLink(link string) string {
 	link = strings.TrimSpace(link)
 	link = strings.TrimPrefix(link, "mailto:")
 	return link
+}
+
+func getAttrVal(node *html.Node, attrName string) string {
+	for _, attr := range node.Attr {
+		if attr.Key == attrName {
+			return attr.Val
+		}
+	}
+
+	return ""
 }
 
 func FromReader(reader io.Reader) (string, error) {

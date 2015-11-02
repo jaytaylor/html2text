@@ -202,6 +202,53 @@ func TestLinks(t *testing.T) {
 	}
 }
 
+func TestImageAltTags(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			`<img />`,
+			``,
+		},
+		{
+			`<img src="http://example.ru/hello.jpg" />`,
+			``,
+		},
+		{
+			`<img alt="Example"/>`,
+			``,
+		},
+		{
+			`<img src="http://example.ru/hello.jpg" alt="Example"/>`,
+			``,
+		},
+		// Images do matter if they are in a link
+		{
+			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"/></a>`,
+			`Example ( http://example.com/ )`,
+		},
+		{
+			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"></a>`,
+			`Example ( http://example.com/ )`,
+		},
+		{
+			`<a href='http://example.com/'><img src='http://example.ru/hello.jpg' alt='Example'/></a>`,
+			`Example ( http://example.com/ )`,
+		},
+		{
+			`<a href='http://example.com/'><img src='http://example.ru/hello.jpg' alt='Example'></a>`,
+			`Example ( http://example.com/ )`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
+		assertString(t, testCase.input, testCase.output)
+		fmt.Printf("\n\n")
+	}
+}
+
 func TestText(t *testing.T) {
 	testCases := []struct {
 		input string
