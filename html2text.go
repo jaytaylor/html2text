@@ -105,6 +105,10 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 
 			return ctx.Emit("\n\n")
 
+		case atom.Style, atom.Script, atom.Head:
+			// Ignore the subtree
+			return nil
+
 		default:
 			return ctx.TraverseChildren(node)
 		}

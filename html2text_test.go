@@ -292,6 +292,60 @@ func TestHeadings(t *testing.T) {
 
 }
 
+func TestIgnoreStylesScriptsHead(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<style>Test</style>",
+			"",
+		},
+		{
+			"<style type=\"text/css\">body { color: #fff; }</style>",
+			"",
+		},
+		{
+			"<link rel=\"stylesheet\" href=\"main.css\">",
+			"",
+		},
+		{
+			"<script>Test</script>",
+			"",
+		},
+		{
+			"<script src=\"main.js\"></script>",
+			"",
+		},
+		{
+			"<script type=\"text/javascript\" src=\"main.js\"></script>",
+			"",
+		},
+		{
+			"<script type=\"text/javascript\">Test</script>",
+			"",
+		},
+		{
+			"<script type=\"text/ng-template\" id=\"template.html\"><a href=\"http://google.com\">Google</a></script>",
+			"",
+		},
+		{
+			"<script type=\"bla-bla-bla\" id=\"template.html\">Test</script>",
+			"",
+		},
+		{
+			`<html><head><title>Title</title></head><body></body></html>`,
+			"",
+		},
+	}
+
+	for _, testCase := range testCases {
+		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
+		assertString(t, testCase.input, testCase.output)
+		fmt.Printf("\n\n")
+	}
+}
+
 func TestText(t *testing.T) {
 	testCases := []struct {
 		input string
