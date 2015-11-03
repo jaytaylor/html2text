@@ -1,7 +1,6 @@
 package html2text
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 )
@@ -34,9 +33,7 @@ func TestStrippingWhitespace(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -84,9 +81,7 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s>\n", testCase.input)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -114,9 +109,7 @@ func TestStrippingLists(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -196,9 +189,7 @@ func TestLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -243,9 +234,7 @@ func TestImageAltTags(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -285,9 +274,7 @@ func TestHeadings(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 
 }
@@ -340,9 +327,7 @@ func TestIgnoreStylesScriptsHead(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
