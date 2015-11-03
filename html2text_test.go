@@ -447,7 +447,7 @@ func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
 	}
 }
 
-func ExampleSimpleUsage() {
+func Example() {
 	inputHtml := `
 	  <html>
 		<head>
