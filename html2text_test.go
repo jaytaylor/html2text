@@ -34,9 +34,7 @@ func TestStrippingWhitespace(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -84,9 +82,7 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s>\n", testCase.input)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -114,9 +110,7 @@ func TestStrippingLists(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -196,9 +190,7 @@ func TestLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -243,9 +235,7 @@ func TestImageAltTags(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 }
 
@@ -285,11 +275,61 @@ func TestHeadings(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fmt.Printf("  testCase: <%s> <%s>\n", testCase.input, testCase.output)
 		assertString(t, testCase.input, testCase.output)
-		fmt.Printf("\n\n")
 	}
 
+}
+
+func TestIgnoreStylesScriptsHead(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<style>Test</style>",
+			"",
+		},
+		{
+			"<style type=\"text/css\">body { color: #fff; }</style>",
+			"",
+		},
+		{
+			"<link rel=\"stylesheet\" href=\"main.css\">",
+			"",
+		},
+		{
+			"<script>Test</script>",
+			"",
+		},
+		{
+			"<script src=\"main.js\"></script>",
+			"",
+		},
+		{
+			"<script type=\"text/javascript\" src=\"main.js\"></script>",
+			"",
+		},
+		{
+			"<script type=\"text/javascript\">Test</script>",
+			"",
+		},
+		{
+			"<script type=\"text/ng-template\" id=\"template.html\"><a href=\"http://google.com\">Google</a></script>",
+			"",
+		},
+		{
+			"<script type=\"bla-bla-bla\" id=\"template.html\">Test</script>",
+			"",
+		},
+		{
+			`<html><head><title>Title</title></head><body></body></html>`,
+			"",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
 }
 
 func TestText(t *testing.T) {
@@ -405,4 +445,53 @@ func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
 	} else {
 		t.Logf("input:\n\n%s\n\n\n\noutput:\n\n%s\n", input, text)
 	}
+}
+
+func Example() {
+	inputHtml := `
+	  <html>
+		<head>
+		  <title>My Mega Service</title>
+		  <link rel=\"stylesheet\" href=\"main.css\">
+		  <style type=\"text/css\">body { color: #fff; }</style>
+		</head>
+
+		<body>
+		  <div class="logo">
+			<a href="http://mymegaservice.com/"><img src="/logo-image.jpg" alt="Mega Service"/></a>
+		  </div>
+
+		  <h1>Welcome to your new account on my service!</h1>
+
+		  <p>
+			  Here is some more information:
+
+			  <ul>
+				  <li>Link 1: <a href="https://example.com">Example.com</a></li>
+				  <li>Link 2: <a href="https://example2.com">Example2.com</a></li>
+				  <li>Something else</li>
+			  </ul>
+		  </p>
+		</body>
+	  </html>
+	`
+
+	text, err := FromString(inputHtml)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(text)
+
+	// Output:
+	// Mega Service ( http://mymegaservice.com/ )
+	//
+	// ******************************************
+	// Welcome to your new account on my service!
+	// ******************************************
+	//
+	// Here is some more information:
+	//
+	// * Link 1: Example.com ( https://example.com )
+	// * Link 2: Example2.com ( https://example2.com )
+	// * Something else
 }
