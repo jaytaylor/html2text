@@ -31,58 +31,54 @@ import (
 
 func main() {
 	inputHtml := `
-	<div class="hard-to-read">
-		Welcome to your new account on my service!
-	</div>
-	
-	<p>
-		Here is some more information:
+          <html>
+            <head>
+              <title>My Mega Service</title>
+              <link rel=\"stylesheet\" href=\"main.css\">
+              <style type=\"text/css\">body { color: #fff; }</style>
+            </head>
+        
+            <body>
+              <div class="logo">
+                <a href="http://mymegaservice.com/"><img src="/logo-image.jpg" alt="Mega Service"/></a>
+              </div>
+        
+              <h1>Welcome to your new account on my service!</h1>
+        
+              <p>
+                  Here is some more information:
+        
+                  <ul>
+                      <li>Link 1: <a href="https://example.com">Example.com</a></li>
+                      <li>Link 2: <a href="https://example2.com">Example2.com</a></li>
+                      <li>Something else</li>
+                  </ul>
+              </p>
+            </body>
+          </html>
+	`
 
-		<ul>
-			<li>Link 1: <a href="https://example.com">Example.com</a></li>
-			<li>Link 2: <a href="https://example.com">Example.com</a></li>
-			<li>Something else</li>
-		</ul>
-	</p>`
 	text, err := html2text.FromString(inputHtml)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("input:\n\n%s\n\noutput:\n\n%s\n", inputHtml, text)
+	fmt.Println(text)
 }
 ```
 
 Output:
 ```
-input:
+Mega Service ( http://mymegaservice.com/ )
 
-    <div class="hard-to-read">
-        Welcome to your new account on my service!
-    </div>
-
-    <p>
-        Here is some more information:
-
-        <ul>
-            <li>Link 1: <a href="https://example.com">Example.com</a></li>
-            <li>Link 2: <a href="https://example.com">Example.com</a></li>
-            <li>Something else</li>
-        </ul>
-    </p>
-
-output:
-
+******************************************
 Welcome to your new account on my service!
+******************************************
 
 Here is some more information:
 
-Link 1:
-https://example.com
-
-Link 2:
-https://example.com
-
-Something else
+* Link 1: Example.com ( https://example.com )
+* Link 2: Example2.com ( https://example2.com )
+* Something else
 ```
 
 
