@@ -86,6 +86,41 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	}
 }
 
+func TestTables(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<table><tr><td></td><td></td></tr></table>",
+			"",
+		},
+		{
+			"<table><tr><td>cell1</td><td>cell2</td></tr></table>",
+			"cell1 cell2",
+		},
+		{
+			"<table><tr><td>row1</td></tr><tr><td>row2</td></tr></table>",
+			"row1\nrow2",
+		},
+		{
+			`<table>
+			   <tr><td>cell1-1</td><td>cell1-2</td></tr>
+			   <tr><td>cell2-1</td><td>cell2-2</td></tr>
+			</table>`,
+			"cell1-1 cell1-2\ncell2-1 cell2-2",
+		},
+		{
+			"_<table><tr><td>cell</td></tr></table>_",
+			"_\n\ncell\n\n_",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+}
+
 func TestStrippingLists(t *testing.T) {
 	testCases := []struct {
 		input  string

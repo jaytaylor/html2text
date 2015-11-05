@@ -94,7 +94,7 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 
 			return ctx.Emit(hrefLink)
 
-		case atom.P, atom.Ul:
+		case atom.P, atom.Ul, atom.Table:
 			if err := ctx.Emit("\n\n"); err != nil {
 				return err
 			}
@@ -104,6 +104,13 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 			}
 
 			return ctx.Emit("\n\n")
+
+		case atom.Tr:
+			if err := ctx.TraverseChildren(node); err != nil {
+				return err
+			}
+
+			return ctx.Emit("\n")
 
 		case atom.Style, atom.Script, atom.Head:
 			// Ignore the subtree
