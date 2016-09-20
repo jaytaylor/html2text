@@ -3,6 +3,7 @@ package html2text
 import (
 	"bytes"
 	"io"
+	"log"
 	"regexp"
 	"strings"
 	"unicode"
@@ -19,7 +20,10 @@ var (
 type textifyTraverseCtx struct {
 	Buf bytes.Buffer
 
-	endsWithSpace bool
+	blockquoteLevel int
+	endsWithSpace   bool
+	endsWithNewline bool
+	justClosedDiv   bool
 }
 
 func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
@@ -34,6 +38,7 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 
 	case html.ElementNode:
 
+		ctx.justClosedDiv = false
 		switch node.DataAtom {
 		case atom.Br:
 			return ctx.Emit("\n")
@@ -63,6 +68,30 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 			}
 			return ctx.Emit("\n\n" + divider + "\n" + str + "\n" + divider + "\n\n")
 
+		case atom.Blockquote:
+			ctx.blockquoteLevel++
+			err := ctx.Emit("\n")
+			if err != nil {
+				return err
+			}
+			if err := ctx.TraverseChildren(node); err != nil {
+				return err
+			}
+			ctx.blockquoteLevel--
+			err = ctx.Emit("\n")
+			return err
+
+		case atom.Div:
+			if err := ctx.TraverseChildren(node); err != nil {
+				return err
+			}
+			var err error
+			if ctx.justClosedDiv == false {
+				err = ctx.Emit("\n")
+			}
+			ctx.justClosedDiv = true
+			return err
+
 		case atom.Li:
 			if err := ctx.Emit("* "); err != nil {
 				return err
@@ -73,6 +102,15 @@ func (ctx *textifyTraverseCtx) Traverse(node *html.Node) error {
 			}
 
 			return ctx.Emit("\n")
+
+		case atom.B:
+			subCtx := textifyTraverseCtx{}
+			subCtx.endsWithSpace = true
+			if err := subCtx.TraverseChildren(node); err != nil {
+				return err
+			}
+			str := subCtx.Buf.String()
+			return ctx.Emit("*" + str + "*")
 
 		case atom.A:
 			// If image is the only child, take its alt text as the link text
@@ -136,16 +174,77 @@ func (ctx *textifyTraverseCtx) Emit(data string) error {
 	if len(data) == 0 {
 		return nil
 	}
-
-	runes := []rune(data)
-	startsWithSpace := unicode.IsSpace(runes[0])
-	if !startsWithSpace && !ctx.endsWithSpace {
-		ctx.Buf.WriteByte(' ')
+	prefix := strings.Repeat(">", ctx.blockquoteLevel)
+	if ctx.blockquoteLevel > 0 {
+		prefix += " "
 	}
-	ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1])
+	lines := ctx.breakLongLines(data)
+	var err error
+	for _, line := range lines {
+		log.Printf("LINE: '%s' '%s'", prefix, line)
+		runes := []rune(line)
+		startsWithSpace := unicode.IsSpace(runes[0])
+		if !startsWithSpace && !ctx.endsWithSpace {
+			ctx.Buf.WriteByte(' ')
+		}
+		ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1])
+		for _, c := range line {
+			_, err = ctx.Buf.WriteString(string(c))
+			if err != nil {
+				return err
+			}
+			if c == '\n' {
+				_, err = ctx.Buf.WriteString(prefix)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		/*
+			if line[0] == '\n' {
+				_, err = ctx.Buf.WriteString("\n")
+				if err != nil {
+					return err
+				}
+			}
+			_, err = ctx.Buf.WriteString(prefix)
+			if err != nil {
+				return err
+			}
+			_, err = ctx.Buf.WriteString(line)
+			if err != nil {
+				return err
+			}
+		*/
+	}
+	return nil
+}
 
-	_, err := ctx.Buf.WriteString(data)
-	return err
+func (ctx *textifyTraverseCtx) breakLongLines(data string) []string {
+	if ctx.blockquoteLevel == 0 {
+		return []string{data}
+	}
+	var ret []string
+	runes := []rune(data)
+	l := len(runes)
+	for l > 74 {
+		i := 74
+		for i >= 0 && !unicode.IsSpace(runes[i]) {
+			i--
+		}
+		if i == -1 {
+			i = 74
+		}
+		ret = append(ret, string(runes[:i])+"\n")
+		for unicode.IsSpace(runes[i]) && i < l {
+			i++
+		}
+		runes = runes[i:]
+		l = len(runes)
+	}
+	ret = append(ret, string(runes))
+	log.Printf("Returned %d lines", len(ret))
+	return ret
 }
 
 func (ctx *textifyTraverseCtx) NormalizeHrefLink(link string) string {
