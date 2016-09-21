@@ -315,6 +315,155 @@ func TestHeadings(t *testing.T) {
 
 }
 
+func TestBold(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<b>Test</b>",
+			"*Test*",
+		},
+		{
+			"\t<b>Test</b> ",
+			"*Test*",
+		},
+		{
+			"\t<b>Test line 1<br>Test 2</b> ",
+			"*Test line 1\nTest 2*",
+		},
+		{
+			"<b>Test</b> <b>Test</b>",
+			"*Test* *Test*",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
+func TestDiv(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		/*
+			{
+				"<div>Test</div>",
+				"Test",
+			},
+			{
+				"\t<div>Test</div> ",
+				"Test",
+			},
+			{
+				"<div>Test line 1<div>Test 2</div></div>",
+				"Test line 1\nTest 2",
+			},
+		*/
+		{
+			"Test 1<div>Test 2</div> <div>Test 3</div>Test 4",
+			"Test 1\nTest 2\nTest 3\nTest 4",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
+func TestBlockquotes(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<div>level 0<blockquote>level 1<br><blockquote>level 2</blockquote>level 1</blockquote><div>level 0</div></div>",
+			"level 0\n> \n> level 1\n> \n>> level 2\n> \n> level 1\n\nlevel 0",
+		},
+		/*
+					{`<div dir="ltr">2016-09-19 17:13 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@wingedpig.com" target="_blank">markf@wingedpig.com</a>></span>:<br><div class="gmail_extra"><div class="gmail_quote"><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr"><span class="">2016-09-19 17:09 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@corp.groups.io" target="_blank">markf@corp.groups.io</a>></span>:<br></span><div class="gmail_extra"><div class="gmail_quote"><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">Lorem ipsum <b>Commode id consectetu</b>r pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur </div></blockquote></span><div>Inline replying </div><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit <b>labore</b></div></blockquote></span><div>More inline replying </div><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">ullamco dolore mollit elit in aliqua dolor irure do<br><div>dork</div></div>
+			</blockquote></span></div>the end</div></div>
+			</blockquote></div>Snarf.</div></div>`,
+						`2016-09-19 17:13 GMT-07:00 Mark Fletcher <markf@wingedpig.com>:
+
+			> 2016-09-19 17:09 GMT-07:00 Mark Fletcher <markf@corp.groups.io>:
+			>
+			>> Lorem ipsum *Commode id consectetu*r pariatur ea occaecat minim aliqua
+			>> ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur
+			>>
+			> Inline replying
+			>
+			>> fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit
+			>> esse labore aute quis commodo non sit dolore officia Excepteur cillum amet
+			>> cupidatat culpa velit *labore*
+			>>
+			> More inline replying
+			>
+			>> ullamco dolore mollit elit in aliqua dolor irure do
+			>> dork
+			>>
+			> the end
+			>
+			Snarf.`,
+					},
+					{
+						`<div dir="ltr">2016-09-19 17:09 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@corp.groups.io" target="_blank">markf@corp.groups.io</a>></span>:<br><div class="gmail_extra"><div class="gmail_quote"><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">Lorem ipsum Commode id consectetur pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur </div></blockquote><div>Inline replying </div><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit <b>labore</b></div></blockquote><div>More inline replying </div><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">ullamco dolore mollit elit in aliqua dolor irure do<br><div>dork</div></div>
+			</blockquote></div>the end</div></div>`,
+						`2016-09-19 17:09 GMT-07:00 Mark Fletcher <markf@corp.groups.io>:
+
+			> Lorem ipsum Commode id consectetur pariatur ea occaecat minim aliqua ad
+			> sit consequat quis ex commodo Duis incididunt eu mollit consectetur
+			>
+			Inline replying
+
+			> fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit
+			> esse labore aute quis commodo non sit dolore officia Excepteur cillum amet
+			> cupidatat culpa velit *labore*
+			>
+			More inline replying
+
+			> ullamco dolore mollit elit in aliqua dolor irure do
+			> dork
+			>
+			the end`,
+					},
+		*/
+		{
+			"<blockquote>BORK</blockquote>BORK",
+			"> \n> BORK\n\nBORK",
+		},
+		{
+			"\t<blockquote> \nBORK<br></blockquote> ",
+			"> \n> BORK\n>",
+		},
+		{
+			"\t<blockquote> \nBORK line 1<br>BORK 2</blockquote> ",
+			"> \n> BORK line 1\n> BORK 2",
+		},
+		{
+			"<blockquote>BORK</blockquote> <blockquote>BORK</blockquote> SNARF",
+			"> \n> BORK\n\n> \n> BORK\n\nSNARF",
+		},
+		{
+			"<blockquote>Lorem ipsum Commodo id consectetur pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit labore ullamco dolore mollit elit in aliqua dolor irure do</blockquote>",
+			"> \n> Lorem ipsum Commodo id consectetur pariatur ea occaecat minim aliqua ad\n> sit consequat quis ex commodo Duis incididunt eu mollit consectetur fugiat\n> voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse\n> labore aute quis commodo non sit dolore officia Excepteur cillum amet\n> cupidatat culpa velit labore ullamco dolore mollit elit in aliqua dolor\n> irure do",
+		},
+		{
+			"<blockquote>Lorem<b>ipsum</b><b>Commodo</b><b>id</b><b>consectetur</b><b>pariatur</b><b>ea</b><b>occaecat</b><b>minim</b><b>aliqua</b><b>ad</b><b>sit</b><b>consequat</b><b>quis</b><b>ex</b><b>commodo</b><b>Duis</b><b>incididunt</b><b>eu</b><b>mollit</b><b>consectetur</b><b>fugiat</b><b>voluptate</b><b>dolore</b><b>in</b><b>pariatur</b><b>in</b><b>commodo</b><b>occaecat</b><b>Ut</b><b>occaecat</b><b>velit</b><b>esse</b><b>labore</b><b>aute</b><b>quis</b><b>commodo</b><b>non</b><b>sit</b><b>dolore</b><b>officia</b><b>Excepteur</b><b>cillum</b><b>amet</b><b>cupidatat</b><b>culpa</b><b>velit</b><b>labore</b><b>ullamco</b><b>dolore</b><b>mollit</b><b>elit</b><b>in</b><b>aliqua</b><b>dolor</b><b>irure</b><b>do</b></blockquote>",
+			"> \n> Lorem *ipsum* *Commodo* *id* *consectetur* *pariatur* *ea* *occaecat* *minim*\n> *aliqua* *ad* *sit* *consequat* *quis* *ex* *commodo* *Duis* *incididunt* *eu*\n> *mollit* *consectetur* *fugiat* *voluptate* *dolore* *in* *pariatur* *in* *commodo*\n> *occaecat* *Ut* *occaecat* *velit* *esse* *labore* *aute* *quis* *commodo*\n> *non* *sit* *dolore* *officia* *Excepteur* *cillum* *amet* *cupidatat* *culpa*\n> *velit* *labore* *ullamco* *dolore* *mollit* *elit* *in* *aliqua* *dolor* *irure*\n> *do*",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
 func TestIgnoreStylesScriptsHead(t *testing.T) {
 	testCases := []struct {
 		input  string
@@ -470,7 +619,6 @@ func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !matcher.MatchString(text) {
 		t.Errorf("Input did not match expression\n"+
 			"Input:\n>>>>\n%s\n<<<<\n\n"+
