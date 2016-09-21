@@ -349,20 +349,18 @@ func TestDiv(t *testing.T) {
 		input  string
 		output string
 	}{
-		/*
-			{
-				"<div>Test</div>",
-				"Test",
-			},
-			{
-				"\t<div>Test</div> ",
-				"Test",
-			},
-			{
-				"<div>Test line 1<div>Test 2</div></div>",
-				"Test line 1\nTest 2",
-			},
-		*/
+		{
+			"<div>Test</div>",
+			"Test",
+		},
+		{
+			"\t<div>Test</div> ",
+			"Test",
+		},
+		{
+			"<div>Test line 1<div>Test 2</div></div>",
+			"Test line 1\nTest 2",
+		},
 		{
 			"Test 1<div>Test 2</div> <div>Test 3</div>Test 4",
 			"Test 1\nTest 2\nTest 3\nTest 4",
