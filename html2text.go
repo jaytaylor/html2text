@@ -117,7 +117,7 @@ func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
 
 			return ctx.emit("\n")
 
-		case atom.B:
+		case atom.B, atom.Strong:
 			subCtx := textifyTraverseCtx{}
 			subCtx.endsWithSpace = true
 			if err := subCtx.traverseChildren(node); err != nil {
