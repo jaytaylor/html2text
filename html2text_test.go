@@ -384,54 +384,6 @@ func TestBlockquotes(t *testing.T) {
 			"<div>level 0<blockquote>level 1<br><blockquote>level 2</blockquote>level 1</blockquote><div>level 0</div></div>",
 			"level 0\n> \n> level 1\n> \n>> level 2\n> \n> level 1\n\nlevel 0",
 		},
-		/*
-					{`<div dir="ltr">2016-09-19 17:13 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@wingedpig.com" target="_blank">markf@wingedpig.com</a>></span>:<br><div class="gmail_extra"><div class="gmail_quote"><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr"><span class="">2016-09-19 17:09 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@corp.groups.io" target="_blank">markf@corp.groups.io</a>></span>:<br></span><div class="gmail_extra"><div class="gmail_quote"><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">Lorem ipsum <b>Commode id consectetu</b>r pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur </div></blockquote></span><div>Inline replying </div><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit <b>labore</b></div></blockquote></span><div>More inline replying </div><span class=""><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">ullamco dolore mollit elit in aliqua dolor irure do<br><div>dork</div></div>
-			</blockquote></span></div>the end</div></div>
-			</blockquote></div>Snarf.</div></div>`,
-						`2016-09-19 17:13 GMT-07:00 Mark Fletcher <markf@wingedpig.com>:
-
-			> 2016-09-19 17:09 GMT-07:00 Mark Fletcher <markf@corp.groups.io>:
-			>
-			>> Lorem ipsum *Commode id consectetu*r pariatur ea occaecat minim aliqua
-			>> ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur
-			>>
-			> Inline replying
-			>
-			>> fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit
-			>> esse labore aute quis commodo non sit dolore officia Excepteur cillum amet
-			>> cupidatat culpa velit *labore*
-			>>
-			> More inline replying
-			>
-			>> ullamco dolore mollit elit in aliqua dolor irure do
-			>> dork
-			>>
-			> the end
-			>
-			Snarf.`,
-					},
-					{
-						`<div dir="ltr">2016-09-19 17:09 GMT-07:00 Mark Fletcher <span dir="ltr"><<a href="mailto:markf@corp.groups.io" target="_blank">markf@corp.groups.io</a>></span>:<br><div class="gmail_extra"><div class="gmail_quote"><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">Lorem ipsum Commode id consectetur pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur </div></blockquote><div>Inline replying </div><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit <b>labore</b></div></blockquote><div>More inline replying </div><blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex"><div dir="ltr">ullamco dolore mollit elit in aliqua dolor irure do<br><div>dork</div></div>
-			</blockquote></div>the end</div></div>`,
-						`2016-09-19 17:09 GMT-07:00 Mark Fletcher <markf@corp.groups.io>:
-
-			> Lorem ipsum Commode id consectetur pariatur ea occaecat minim aliqua ad
-			> sit consequat quis ex commodo Duis incididunt eu mollit consectetur
-			>
-			Inline replying
-
-			> fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit
-			> esse labore aute quis commodo non sit dolore officia Excepteur cillum amet
-			> cupidatat culpa velit *labore*
-			>
-			More inline replying
-
-			> ullamco dolore mollit elit in aliqua dolor irure do
-			> dork
-			>
-			the end`,
-					},
-		*/
 		{
 			"<blockquote>BORK</blockquote>BORK",
 			"> \n> BORK\n\nBORK",
