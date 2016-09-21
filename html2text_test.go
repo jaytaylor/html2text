@@ -385,20 +385,20 @@ func TestBlockquotes(t *testing.T) {
 			"level 0\n> \n> level 1\n> \n>> level 2\n> \n> level 1\n\nlevel 0",
 		},
 		{
-			"<blockquote>BORK</blockquote>BORK",
-			"> \n> BORK\n\nBORK",
+			"<blockquote>Test</blockquote>Test",
+			"> \n> Test\n\nTest",
 		},
 		{
-			"\t<blockquote> \nBORK<br></blockquote> ",
-			"> \n> BORK\n>",
+			"\t<blockquote> \nTest<br></blockquote> ",
+			"> \n> Test\n>",
 		},
 		{
-			"\t<blockquote> \nBORK line 1<br>BORK 2</blockquote> ",
-			"> \n> BORK line 1\n> BORK 2",
+			"\t<blockquote> \nTest line 1<br>Test 2</blockquote> ",
+			"> \n> Test line 1\n> Test 2",
 		},
 		{
-			"<blockquote>BORK</blockquote> <blockquote>BORK</blockquote> SNARF",
-			"> \n> BORK\n\n> \n> BORK\n\nSNARF",
+			"<blockquote>Test</blockquote> <blockquote>Test</blockquote> Other Test",
+			"> \n> Test\n\n> \n> Test\n\nOther Test",
 		},
 		{
 			"<blockquote>Lorem ipsum Commodo id consectetur pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit labore ullamco dolore mollit elit in aliqua dolor irure do</blockquote>",
