@@ -315,6 +315,105 @@ func TestHeadings(t *testing.T) {
 
 }
 
+func TestBold(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<b>Test</b>",
+			"*Test*",
+		},
+		{
+			"\t<b>Test</b> ",
+			"*Test*",
+		},
+		{
+			"\t<b>Test line 1<br>Test 2</b> ",
+			"*Test line 1\nTest 2*",
+		},
+		{
+			"<b>Test</b> <b>Test</b>",
+			"*Test* *Test*",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
+func TestDiv(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<div>Test</div>",
+			"Test",
+		},
+		{
+			"\t<div>Test</div> ",
+			"Test",
+		},
+		{
+			"<div>Test line 1<div>Test 2</div></div>",
+			"Test line 1\nTest 2",
+		},
+		{
+			"Test 1<div>Test 2</div> <div>Test 3</div>Test 4",
+			"Test 1\nTest 2\nTest 3\nTest 4",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
+func TestBlockquotes(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"<div>level 0<blockquote>level 1<br><blockquote>level 2</blockquote>level 1</blockquote><div>level 0</div></div>",
+			"level 0\n> \n> level 1\n> \n>> level 2\n> \n> level 1\n\nlevel 0",
+		},
+		{
+			"<blockquote>Test</blockquote>Test",
+			"> \n> Test\n\nTest",
+		},
+		{
+			"\t<blockquote> \nTest<br></blockquote> ",
+			"> \n> Test\n>",
+		},
+		{
+			"\t<blockquote> \nTest line 1<br>Test 2</blockquote> ",
+			"> \n> Test line 1\n> Test 2",
+		},
+		{
+			"<blockquote>Test</blockquote> <blockquote>Test</blockquote> Other Test",
+			"> \n> Test\n\n> \n> Test\n\nOther Test",
+		},
+		{
+			"<blockquote>Lorem ipsum Commodo id consectetur pariatur ea occaecat minim aliqua ad sit consequat quis ex commodo Duis incididunt eu mollit consectetur fugiat voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse labore aute quis commodo non sit dolore officia Excepteur cillum amet cupidatat culpa velit labore ullamco dolore mollit elit in aliqua dolor irure do</blockquote>",
+			"> \n> Lorem ipsum Commodo id consectetur pariatur ea occaecat minim aliqua ad\n> sit consequat quis ex commodo Duis incididunt eu mollit consectetur fugiat\n> voluptate dolore in pariatur in commodo occaecat Ut occaecat velit esse\n> labore aute quis commodo non sit dolore officia Excepteur cillum amet\n> cupidatat culpa velit labore ullamco dolore mollit elit in aliqua dolor\n> irure do",
+		},
+		{
+			"<blockquote>Lorem<b>ipsum</b><b>Commodo</b><b>id</b><b>consectetur</b><b>pariatur</b><b>ea</b><b>occaecat</b><b>minim</b><b>aliqua</b><b>ad</b><b>sit</b><b>consequat</b><b>quis</b><b>ex</b><b>commodo</b><b>Duis</b><b>incididunt</b><b>eu</b><b>mollit</b><b>consectetur</b><b>fugiat</b><b>voluptate</b><b>dolore</b><b>in</b><b>pariatur</b><b>in</b><b>commodo</b><b>occaecat</b><b>Ut</b><b>occaecat</b><b>velit</b><b>esse</b><b>labore</b><b>aute</b><b>quis</b><b>commodo</b><b>non</b><b>sit</b><b>dolore</b><b>officia</b><b>Excepteur</b><b>cillum</b><b>amet</b><b>cupidatat</b><b>culpa</b><b>velit</b><b>labore</b><b>ullamco</b><b>dolore</b><b>mollit</b><b>elit</b><b>in</b><b>aliqua</b><b>dolor</b><b>irure</b><b>do</b></blockquote>",
+			"> \n> Lorem *ipsum* *Commodo* *id* *consectetur* *pariatur* *ea* *occaecat* *minim*\n> *aliqua* *ad* *sit* *consequat* *quis* *ex* *commodo* *Duis* *incididunt* *eu*\n> *mollit* *consectetur* *fugiat* *voluptate* *dolore* *in* *pariatur* *in* *commodo*\n> *occaecat* *Ut* *occaecat* *velit* *esse* *labore* *aute* *quis* *commodo*\n> *non* *sit* *dolore* *officia* *Excepteur* *cillum* *amet* *cupidatat* *culpa*\n> *velit* *labore* *ullamco* *dolore* *mollit* *elit* *in* *aliqua* *dolor* *irure*\n> *do*",
+		},
+	}
+
+	for _, testCase := range testCases {
+		assertString(t, testCase.input, testCase.output)
+	}
+
+}
+
 func TestIgnoreStylesScriptsHead(t *testing.T) {
 	testCases := []struct {
 		input  string
@@ -470,7 +569,6 @@ func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !matcher.MatchString(text) {
 		t.Errorf("Input did not match expression\n"+
 			"Input:\n>>>>\n%s\n<<<<\n\n"+
