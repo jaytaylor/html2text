@@ -1,8 +1,8 @@
 # html2text
 
-![Documentation](https://godoc.org/github.com/jaytaylor/html2text?status.svg)
-[![Build Status](https://travis-ci.org/jaytaylor/html2text.svg)](https://travis-ci.org/jaytaylor/html2text)
-![Report Card](https://goreportcard.com/badge/jaytaylor/html2text)
+[![Documentation](https://godoc.org/github.com/jaytaylor/html2text?status.svg)](https://godoc.org/github.com/jaytaylor/html2text)
+[![Build Status](https://travis-ci.org/jaytaylor/html2text.svg?branc=master)](https://travis-ci.org/jaytaylor/html2text)
+[![Report Card](https://goreportcard.com/badge/github.com/jaytaylor/html2text)](https://goreportcard.com/report/github.com/jaytaylor/html2text)
 
 ### Converts HTML into text
 
