@@ -9,6 +9,10 @@
 
 ## Introduction
 
+Ensure your emails are readable by all!
+
+Turns HTML into raw text, useful for sending fancy HTML emails with a equivalently nicely formatted TXT document as a fallback (e.g. for people who don't allow HTML emails or have other display issues).
+
 html2text is a simple golang package for rendering HTML into plaintext.
 
 There are still lots of improvements to be had, but FWIW this has worked fine for my [basic] HTML-2-text needs.
