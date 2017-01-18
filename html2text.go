@@ -273,22 +273,26 @@ func getAttrVal(node *html.Node, attrName string) string {
 	return ""
 }
 
-func FromReader(reader io.Reader) (string, error) {
-	doc, err := html.Parse(reader)
-	if err != nil {
-		return "", err
-	}
-
+func FromHtmlNode(doc *html.Node) (string, error) {
 	ctx := textifyTraverseCtx{
 		Buf: bytes.Buffer{},
 	}
-	if err = ctx.traverse(doc); err != nil {
+	if err := ctx.traverse(doc); err != nil {
 		return "", err
 	}
 
 	text := strings.TrimSpace(newlineRe.ReplaceAllString(
 		strings.Replace(ctx.Buf.String(), "\n ", "\n", -1), "\n\n"))
 	return text, nil
+
+}
+
+func FromReader(reader io.Reader) (string, error) {
+	doc, err := html.Parse(reader)
+	if err != nil {
+		return "", err
+	}
+	return FromHtmlNode(doc)
 }
 
 func FromString(input string) (string, error) {
