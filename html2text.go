@@ -273,7 +273,7 @@ func getAttrVal(node *html.Node, attrName string) string {
 	return ""
 }
 
-func FromHtmlRoot(doc *html.Node) (string, error) {
+func FromHtmlNode(doc *html.Node) (string, error) {
 	ctx := textifyTraverseCtx{
 		Buf: bytes.Buffer{},
 	}
@@ -292,7 +292,7 @@ func FromReader(reader io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return FromHtmlRoot(doc)
+	return FromHtmlNode(doc)
 }
 
 func FromString(input string) (string, error) {
