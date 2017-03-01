@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/ssor/bom"
 )
 
 var (
@@ -40,7 +38,6 @@ func TestParseUT8(t *testing.T) {
 		if err != nil {
 			t.Fatal("ReadFile  err: ", err)
 		}
-		bs = bom.CleanBom(bs)
 		text, err := FromReader(bytes.NewReader(bs))
 		if err != nil {
 			t.Fatal("html2Text  err: ", err)

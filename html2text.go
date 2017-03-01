@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ssor/bom"
+
 	"fmt"
 
 	"golang.org/x/net/html"
@@ -302,7 +304,7 @@ func FromHtmlNode(doc *html.Node) (string, error) {
 }
 
 func FromReader(reader io.Reader) (string, error) {
-	doc, err := html.Parse(reader)
+	doc, err := html.Parse(bom.NewReaderWithoutBom(reader))
 	if err != nil {
 		return "", err
 	}
@@ -311,7 +313,8 @@ func FromReader(reader io.Reader) (string, error) {
 }
 
 func FromString(input string) (string, error) {
-	text, err := FromReader(strings.NewReader(input))
+	bs := bom.CleanBom([]byte(input))
+	text, err := FromReader(bytes.NewReader(bs))
 	if err != nil {
 		return "", err
 	}
