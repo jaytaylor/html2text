@@ -1,10 +1,58 @@
 package html2text
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"path"
 	"regexp"
+	"strings"
 	"testing"
+
+	"github.com/ssor/bom"
 )
+
+var (
+	destPath = "testdata"
+)
+
+func TestParseUT8(t *testing.T) {
+	html_files := []struct {
+		file                      string
+		keyword_should_not_exists string
+		keyword_should_exists     string
+	}{
+		{
+
+			"utf8.html",
+			"学习之道:美国公认学习第一书title",
+			"次世界冠军赛上，我几近疯狂",
+		},
+		{
+			"utf8_with_bom.xhtml",
+			"1892年波兰文版序言title",
+			"种新的波兰文本已成为必要",
+		},
+	}
+
+	for _, html_file := range html_files {
+		bs, err := ioutil.ReadFile(path.Join(destPath, html_file.file))
+		if err != nil {
+			t.Fatal("ReadFile  err: ", err)
+		}
+		bs = bom.CleanBom(bs)
+		text, err := FromReader(bytes.NewReader(bs))
+		if err != nil {
+			t.Fatal("html2Text  err: ", err)
+		}
+		if strings.Contains(text, html_file.keyword_should_exists) == false {
+			t.Fatal("keyword ", html_file.keyword_should_exists, " should  exists in file ", html_file.file)
+		}
+		if strings.Contains(text, html_file.keyword_should_not_exists) == true {
+			t.Fatal("keyword ", html_file.keyword_should_not_exists, " should not exists in file ", html_file.file)
+		}
+	}
+}
 
 func TestStrippingWhitespace(t *testing.T) {
 	testCases := []struct {
