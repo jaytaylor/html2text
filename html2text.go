@@ -9,21 +9,9 @@ import (
 
 	"github.com/ssor/bom"
 
-	"fmt"
-
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
-
-var (
-	debuging = true
-)
-
-func printDebug(args ...interface{}) {
-	if debuging {
-		fmt.Println(args)
-	}
-}
 
 var (
 	spacingRe = regexp.MustCompile(`[ \r\n\t]+`)
