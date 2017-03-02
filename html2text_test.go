@@ -41,12 +41,15 @@ func TestParseUT8(t *testing.T) {
 		text, err := FromReader(bytes.NewReader(bs))
 		if err != nil {
 			t.Fatal("html2Text  err: ", err)
+			t.FailNow()
 		}
 		if strings.Contains(text, html_file.keyword_should_exists) == false {
 			t.Fatal("keyword ", html_file.keyword_should_exists, " should  exists in file ", html_file.file)
+			t.FailNow()
 		}
 		if strings.Contains(text, html_file.keyword_should_not_exists) == true {
 			t.Fatal("keyword ", html_file.keyword_should_not_exists, " should not exists in file ", html_file.file)
+			t.FailNow()
 		}
 	}
 }

@@ -308,7 +308,6 @@ func FromReader(reader io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// spew.Dump(doc)
 	return FromHtmlNode(doc)
 }
 
