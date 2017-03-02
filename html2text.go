@@ -292,7 +292,11 @@ func FromHtmlNode(doc *html.Node) (string, error) {
 }
 
 func FromReader(reader io.Reader) (string, error) {
-	doc, err := html.Parse(bom.NewReaderWithoutBom(reader))
+	reader, err := bom.NewReaderWithoutBom(reader)
+	if err != nil {
+		return "", err
+	}
+	doc, err := html.Parse(reader)
 	if err != nil {
 		return "", err
 	}
