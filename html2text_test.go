@@ -15,10 +15,10 @@ const (
 )
 
 func TestParseUTF8(t *testing.T) {
-	html_files := []struct {
-		file                     string
-		keyword_should_not_exist string
-		keyword_should_exist     string
+	htmlFiles := []struct {
+		file                  string
+		keywordShouldNotExist string
+		keywordShouldExist    string
 	}{
 		{
 			"utf8.html",
@@ -32,8 +32,8 @@ func TestParseUTF8(t *testing.T) {
 		},
 	}
 
-	for _, html_file := range html_files {
-		bs, err := ioutil.ReadFile(path.Join(destPath, html_file.file))
+	for _, htmlFile := range htmlFiles {
+		bs, err := ioutil.ReadFile(path.Join(destPath, htmlFile.file))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -41,11 +41,11 @@ func TestParseUTF8(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(text, html_file.keyword_should_exist) == false {
-			t.Fatalf("keyword %s should  exists in file %s", html_file.keyword_should_exist, html_file.file)
+		if !strings.Contains(text, htmlFile.keywordShouldExist) {
+			t.Fatalf("keyword %s should  exists in file %s", htmlFile.keywordShouldExist, htmlFile.file)
 		}
-		if strings.Contains(text, html_file.keyword_should_not_exist) == true {
-			t.Fatalf("keyword %s should not exists in file %s", html_file.keyword_should_not_exist, html_file.file)
+		if strings.Contains(text, htmlFile.keywordShouldNotExist) {
+			t.Fatalf("keyword %s should not exists in file %s", htmlFile.keywordShouldNotExist, htmlFile.file)
 		}
 	}
 }

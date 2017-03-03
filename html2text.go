@@ -178,7 +178,6 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 	}
 }
 func (ctx *textifyTraverseCtx) traverseChildren(node *html.Node) error {
-
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		if err := ctx.traverse(c); err != nil {
 			return err
@@ -292,11 +291,11 @@ func FromHtmlNode(doc *html.Node) (string, error) {
 }
 
 func FromReader(reader io.Reader) (string, error) {
-	reader, err := bom.NewReaderWithoutBom(reader)
+	newReader, err := bom.NewReaderWithoutBom(reader)
 	if err != nil {
 		return "", err
 	}
-	doc, err := html.Parse(reader)
+	doc, err := html.Parse(newReader)
 	if err != nil {
 		return "", err
 	}
