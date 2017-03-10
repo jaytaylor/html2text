@@ -1,10 +1,54 @@
 package html2text
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"path"
 	"regexp"
+	"strings"
 	"testing"
 )
+
+const (
+	destPath = "testdata"
+)
+
+func TestParseUTF8(t *testing.T) {
+	htmlFiles := []struct {
+		file                  string
+		keywordShouldNotExist string
+		keywordShouldExist    string
+	}{
+		{
+			"utf8.html",
+			"学习之道:美国公认学习第一书title",
+			"次世界冠军赛上，我几近疯狂",
+		},
+		{
+			"utf8_with_bom.xhtml",
+			"1892年波兰文版序言title",
+			"种新的波兰文本已成为必要",
+		},
+	}
+
+	for _, htmlFile := range htmlFiles {
+		bs, err := ioutil.ReadFile(path.Join(destPath, htmlFile.file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text, err := FromReader(bytes.NewReader(bs))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(text, htmlFile.keywordShouldExist) {
+			t.Fatalf("keyword %s should  exists in file %s", htmlFile.keywordShouldExist, htmlFile.file)
+		}
+		if strings.Contains(text, htmlFile.keywordShouldNotExist) {
+			t.Fatalf("keyword %s should not exists in file %s", htmlFile.keywordShouldNotExist, htmlFile.file)
+		}
+	}
+}
 
 func TestStrippingWhitespace(t *testing.T) {
 	testCases := []struct {
