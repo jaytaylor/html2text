@@ -3,7 +3,6 @@ package html2text
 import (
 	"bytes"
 	"io"
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -11,11 +10,6 @@ import (
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
-)
-
-var (
-	spacingRe = regexp.MustCompile(`[ \r\n\t]+`)
-	newlineRe = regexp.MustCompile(`\n\n+`)
 )
 
 type textifyTraverseCtx struct {
@@ -29,13 +23,55 @@ type textifyTraverseCtx struct {
 	justClosedDiv   bool
 }
 
+func trimSpace(in string) string {
+	res := []string{}
+	current := []byte{}
+	for _, v := range []byte(in) {
+		switch v {
+		case ' ', '\t', '\n', '\r':
+			if len(current) > 0 {
+				res = append(res, string(current))
+				current = []byte{}
+			}
+		default:
+			current = append(current, v)
+		}
+	}
+	if len(current) > 0 {
+		// last word
+		res = append(res, string(current))
+	}
+	return strings.Join(res, " ")
+}
+
+func trimMultilines(in string) string {
+	res := []byte{}
+	count := 0
+	for _, v := range []byte(in) {
+		if v == '\n' {
+			switch count {
+			case 0, 1:
+				count++
+				res = append(res, v)
+			default:
+				count++
+			}
+		} else {
+			count = 0
+			res = append(res, v)
+		}
+	}
+
+	return string(res)
+}
+
 func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
 	switch node.Type {
 	default:
 		return ctx.traverseChildren(node)
 
 	case html.TextNode:
-		data := strings.Trim(spacingRe.ReplaceAllString(node.Data, " "), " ")
+		data := trimSpace(node.Data)
 		return ctx.emit(data)
 
 	case html.ElementNode:
@@ -284,8 +320,9 @@ func FromHtmlNode(doc *html.Node) (string, error) {
 		return "", err
 	}
 
-	text := strings.TrimSpace(newlineRe.ReplaceAllString(
-		strings.Replace(ctx.Buf.String(), "\n ", "\n", -1), "\n\n"))
+	text := strings.TrimSpace(
+		trimMultilines(strings.Replace(ctx.Buf.String(), "\n ", "\n", -1)),
+	)
 	return text, nil
 
 }
