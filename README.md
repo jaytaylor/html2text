@@ -62,6 +62,34 @@ func main() {
                       <li>Something else</li>
                   </ul>
               </p>
+
+              <p>
+                And a cool table to display more information in another way:
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Header 1</th>
+                        <th>Header 2</th>
+                      </tr>
+                    </thead>
+                    <tfoot>
+                      <tr>
+                        <td>Footer 1</td>
+                        <td>Footer 2</td>
+                      </tr>
+                    </tfoot>
+                    <tbody>
+                      <tr>
+                        <td>Row 1 Col 1</td>
+                        <td>Row 1 Col 2</td>
+                      </tr>
+                      <tr>
+                        <td>Row 2 Col 1</td>
+                        <td>Row 2 Col 2</td>
+                      </tr>
+                    </tbody>
+                  </table>
+              </p>
             </body>
           </html>
 	`
@@ -87,6 +115,17 @@ Here is some more information:
 * Link 1: Example.com ( https://example.com )
 * Link 2: Example2.com ( https://example2.com )
 * Something else
+
+And a cool table to display more information in another way:
+
++-------------+-------------+
+|  HEADER 1   |  HEADER 2   |
++-------------+-------------+
+| Row 1 Col 1 | Row 1 Col 2 |
+| Row 2 Col 1 | Row 2 Col 2 |
++-------------+-------------+
+|  FOOTER 1   |  FOOTER 2   |
++-------------+-------------+
 ```
 
 
