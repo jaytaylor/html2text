@@ -137,26 +137,127 @@ func TestTables(t *testing.T) {
 	}{
 		{
 			"<table><tr><td></td><td></td></tr></table>",
-			"",
+			// Empty table
+			// +--+--+
+			// |  |  |
+			// +--+--+
+			"+--+--+\n|  |  |\n+--+--+",
 		},
 		{
 			"<table><tr><td>cell1</td><td>cell2</td></tr></table>",
-			"cell1 cell2",
+			// +-------+-------+
+			// | cell1 | cell2 |
+			// +-------+-------+
+			"+-------+-------+\n| cell1 | cell2 |\n+-------+-------+",
 		},
 		{
 			"<table><tr><td>row1</td></tr><tr><td>row2</td></tr></table>",
-			"row1\nrow2",
+			// +------+
+			// | row1 |
+			// | row2 |
+			// +------+
+			"+------+\n| row1 |\n| row2 |\n+------+",
+		},
+		{
+			`<table>
+				<tbody>
+					<tr><td><p>Row-1-Col-1-Msg1</p><p>Row-1-Col-1-Msg2</p></td><td>Row-1-Col-2</td></tr>
+					<tr><td>Row-2-Col-1</td><td>Row-2-Col-2</td></tr>
+				</tbody>
+			</table>`,
+			// +--------------------------------+-------------+
+			// | Row-1-Col-1-Msg1               | Row-1-Col-2 |
+			// | Row-1-Col-1-Msg2               |             |
+			// | Row-2-Col-1                    | Row-2-Col-2 |
+			// +--------------------------------+-------------+
+			`+--------------------------------+-------------+
+| Row-1-Col-1-Msg1               | Row-1-Col-2 |
+| Row-1-Col-1-Msg2               |             |
+| Row-2-Col-1                    | Row-2-Col-2 |
++--------------------------------+-------------+`,
 		},
 		{
 			`<table>
 			   <tr><td>cell1-1</td><td>cell1-2</td></tr>
 			   <tr><td>cell2-1</td><td>cell2-2</td></tr>
 			</table>`,
-			"cell1-1 cell1-2\ncell2-1 cell2-2",
+			// +---------+---------+
+			// | cell1-1 | cell1-2 |
+			// | cell2-1 | cell2-2 |
+			// +---------+---------+
+			"+---------+---------+\n| cell1-1 | cell1-2 |\n| cell2-1 | cell2-2 |\n+---------+---------+",
+		},
+		{
+			`<table>
+				<thead>
+					<tr><th>Header 1</th><th>Header 2</th></tr>
+				</thead>
+				<tfoot>
+					<tr><td>Footer 1</td><td>Footer 2</td></tr>
+				</tfoot>
+				<tbody>
+					<tr><td>Row 1 Col 1</td><td>Row 1 Col 2</td></tr>
+					<tr><td>Row 2 Col 1</td><td>Row 2 Col 2</td></tr>
+				</tbody>
+			</table>`,
+			`+-------------+-------------+
+|  HEADER 1   |  HEADER 2   |
++-------------+-------------+
+| Row 1 Col 1 | Row 1 Col 2 |
+| Row 2 Col 1 | Row 2 Col 2 |
++-------------+-------------+
+|  FOOTER 1   |  FOOTER 2   |
++-------------+-------------+`,
+		},
+		// Two tables in same HTML (goal is to test that context is reinitalized correctly)
+		{
+			`<p>
+				<table>
+					<thead>
+						<tr><th>Table 1 Header 1</th><th>Table 1 Header 2</th></tr>
+					</thead>
+					<tfoot>
+						<tr><td>Table 1 Footer 1</td><td>Table 1 Footer 2</td></tr>
+					</tfoot>
+					<tbody>
+						<tr><td>Table 1 Row 1 Col 1</td><td>Table 1 Row 1 Col 2</td></tr>
+						<tr><td>Table 1 Row 2 Col 1</td><td>Table 1 Row 2 Col 2</td></tr>
+					</tbody>
+				</table>
+				<table>
+					<thead>
+						<tr><th>Table 2 Header 1</th><th>Table 2 Header 2</th></tr>
+					</thead>
+					<tfoot>
+						<tr><td>Table 2 Footer 1</td><td>Table 2 Footer 2</td></tr>
+					</tfoot>
+					<tbody>
+						<tr><td>Table 2 Row 1 Col 1</td><td>Table 2 Row 1 Col 2</td></tr>
+						<tr><td>Table 2 Row 2 Col 1</td><td>Table 2 Row 2 Col 2</td></tr>
+					</tbody>
+				</table>
+			</p>`,
+			`+---------------------+---------------------+
+|  TABLE 1 HEADER 1   |  TABLE 1 HEADER 2   |
++---------------------+---------------------+
+| Table 1 Row 1 Col 1 | Table 1 Row 1 Col 2 |
+| Table 1 Row 2 Col 1 | Table 1 Row 2 Col 2 |
++---------------------+---------------------+
+|  TABLE 1 FOOTER 1   |  TABLE 1 FOOTER 2   |
++---------------------+---------------------+
+
++---------------------+---------------------+
+|  TABLE 2 HEADER 1   |  TABLE 2 HEADER 2   |
++---------------------+---------------------+
+| Table 2 Row 1 Col 1 | Table 2 Row 1 Col 2 |
+| Table 2 Row 2 Col 1 | Table 2 Row 2 Col 2 |
++---------------------+---------------------+
+|  TABLE 2 FOOTER 1   |  TABLE 2 FOOTER 2   |
++---------------------+---------------------+`,
 		},
 		{
 			"_<table><tr><td>cell</td></tr></table>_",
-			"_\n\ncell\n\n_",
+			"_\n\n+------+\n| cell |\n+------+\n\n_",
 		},
 	}
 

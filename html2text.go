@@ -9,6 +9,7 @@ import (
 
 	"github.com/ssor/bom"
 
+	"github.com/olekukonko/tablewriter"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -17,6 +18,15 @@ var (
 	spacingRe = regexp.MustCompile(`[ \r\n\t]+`)
 	newlineRe = regexp.MustCompile(`\n\n+`)
 )
+
+// variables for table related context
+type traverseTableCtx struct {
+	header     []string
+	body       [][]string
+	footer     []string
+	tmpRow     int
+	isInFooter bool
+}
 
 type textifyTraverseCtx struct {
 	Buf bytes.Buffer
@@ -27,6 +37,7 @@ type textifyTraverseCtx struct {
 	endsWithSpace   bool
 	endsWithNewline bool
 	justClosedDiv   bool
+	tableCtx        traverseTableCtx
 }
 
 func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
@@ -151,7 +162,7 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 
 		return ctx.emit(hrefLink)
 
-	case atom.P, atom.Ul, atom.Table:
+	case atom.P, atom.Ul:
 		if err := ctx.emit("\n\n"); err != nil {
 			return err
 		}
@@ -161,13 +172,76 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		}
 
 		return ctx.emit("\n\n")
+	case atom.Table:
+		if err := ctx.emit("\n\n"); err != nil {
+			return err
+		}
+		// re-intialize all table context
+		ctx.tableCtx.body = [][]string{}
+		ctx.tableCtx.header = []string{}
+		ctx.tableCtx.footer = []string{}
+		ctx.tableCtx.isInFooter = false
+		ctx.tableCtx.tmpRow = 0
 
-	case atom.Tr:
+		// Browse children, enriching context with table data
 		if err := ctx.traverseChildren(node); err != nil {
 			return err
 		}
 
-		return ctx.emit("\n")
+		buf := new(bytes.Buffer)
+		table := tablewriter.NewWriter(buf)
+		table.SetHeader(ctx.tableCtx.header)
+		table.SetFooter(ctx.tableCtx.footer)
+		table.AppendBulk(ctx.tableCtx.body)
+
+		// Print the table
+		table.Render()
+		if err := ctx.emit(buf.String()); err != nil {
+			return err
+		}
+
+		return ctx.emit("\n\n")
+	case atom.Tfoot:
+		ctx.tableCtx.isInFooter = true
+		if err := ctx.traverseChildren(node); err != nil {
+			return err
+		}
+		ctx.tableCtx.isInFooter = false
+
+		return nil
+	case atom.Tr:
+
+		ctx.tableCtx.body = append(ctx.tableCtx.body, []string{})
+		if err := ctx.traverseChildren(node); err != nil {
+			return err
+		}
+		ctx.tableCtx.tmpRow++
+
+		return nil
+	case atom.Th:
+
+		res, err := getContentAsString(node)
+		if err != nil {
+			return err
+		}
+
+		ctx.tableCtx.header = append(ctx.tableCtx.header, res)
+
+		return nil
+	case atom.Td:
+
+		res, err := getContentAsString(node)
+		if err != nil {
+			return err
+		}
+
+		if ctx.tableCtx.isInFooter {
+			ctx.tableCtx.footer = append(ctx.tableCtx.footer, res)
+		} else {
+			ctx.tableCtx.body[ctx.tableCtx.tmpRow] = append(ctx.tableCtx.body[ctx.tableCtx.tmpRow], res)
+		}
+
+		return nil
 
 	case atom.Style, atom.Script, atom.Head:
 		// Ignore the subtree
@@ -177,6 +251,7 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		return ctx.traverseChildren(node)
 	}
 }
+
 func (ctx *textifyTraverseCtx) traverseChildren(node *html.Node) error {
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		if err := ctx.traverse(c); err != nil {
@@ -274,6 +349,22 @@ func getAttrVal(node *html.Node, attrName string) string {
 	}
 
 	return ""
+}
+
+// getContentAsString browse every child of node and get content as string
+func getContentAsString(node *html.Node) (string, error) {
+	var res string
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		s, err := FromHtmlNode(c)
+		if err != nil {
+			return "", err
+		}
+		res += s
+		if c.NextSibling != nil {
+			res += "\n"
+		}
+	}
+	return res, nil
 }
 
 func FromHtmlNode(doc *html.Node) (string, error) {
