@@ -4,15 +4,27 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-const (
-	destPath = "testdata"
-)
+const destPath = "testdata"
+
+// EnableExtraLogging turns on additional testing log output.
+// Extra test logging can be enabled by setting the environment variable
+// HTML2TEXT_EXTRA_LOGGING to "1" or "true".
+var EnableExtraLogging bool
+
+func init() {
+	if v := os.Getenv("HTML2TEXT_EXTRA_LOGGING"); v == "1" || v == "true" {
+		EnableExtraLogging = true
+	}
+}
+
+// TODO Add tests for FromHtmlNode and FromReader.
 
 func TestParseUTF8(t *testing.T) {
 	htmlFiles := []struct {
@@ -80,7 +92,7 @@ func TestStrippingWhitespace(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -132,7 +144,7 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -217,7 +229,8 @@ func TestTables(t *testing.T) {
 |  FOOTER 1   |  FOOTER 2   |
 +-------------+-------------+`,
 		},
-		// Two tables in same HTML (goal is to test that context is reinitalized correctly)
+		// Two tables in same HTML (goal is to test that context is
+		// reinitalized correctly).
 		{
 			`<p>
 				<table>
@@ -272,7 +285,7 @@ func TestTables(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -304,7 +317,7 @@ func TestStrippingLists(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -388,7 +401,7 @@ func TestLinks(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -415,7 +428,7 @@ func TestImageAltTags(t *testing.T) {
 			`<img src="http://example.ru/hello.jpg" alt="Example"/>`,
 			``,
 		},
-		// Images do matter if they are in a link
+		// Images do matter if they are in a link.
 		{
 			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"/></a>`,
 			`Example ( http://example.com/ )`,
@@ -437,7 +450,7 @@ func TestImageAltTags(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -481,7 +494,7 @@ func TestHeadings(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -514,7 +527,7 @@ func TestBold(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -547,7 +560,7 @@ func TestDiv(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -592,7 +605,7 @@ func TestBlockquotes(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -649,7 +662,7 @@ func TestIgnoreStylesScriptsHead(t *testing.T) {
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -720,7 +733,7 @@ List:
 	for _, testCase := range testCases {
 		if msg, err := wantRegExp(testCase.input, testCase.expr); err != nil {
 			t.Error(err)
-		} else {
+		} else if len(msg) > 0 {
 			t.Log(msg)
 		}
 	}
@@ -750,29 +763,60 @@ func (m ExactStringMatcher) String() string {
 }
 
 func wantRegExp(input string, outputRE string) (string, error) {
-	return assertPlaintext(input, RegexpStringMatcher(outputRE))
+	return match(input, RegexpStringMatcher(outputRE))
 }
 
 func wantString(input string, output string) (string, error) {
-	return assertPlaintext(input, ExactStringMatcher(output))
+	return match(input, ExactStringMatcher(output))
 }
 
-func assertPlaintext(input string, matcher StringMatcher) (string, error) {
+func match(input string, matcher StringMatcher) (string, error) {
 	text, err := FromString(input)
 	if err != nil {
 		return "", err
 	}
 	if !matcher.MatchString(text) {
-		return "", fmt.Errorf("Input did not match expression\n"+
-			"Input:\n>>>>\n%v\n<<<<\n\n"+
-			"Output:\n>>>>\n%v\n<<<<\n\n"+
-			"Expected output:\n>>>>\n%v\n<<<<\n\n",
+		return "", fmt.Errorf(`Error: Input did not match specified expression
+Input:
+>>>>
+%v
+<<<<
+
+Output:
+>>>>
+%v
+<<<<
+
+Expected:
+>>>>
+%v
+<<<<
+
+`,
 			input,
 			text,
 			matcher.String(),
 		)
 	}
-	return fmt.Sprintf("input:\n\n%v\n\n\n\noutput:\n\n%v\n", input, text), nil
+
+	var msg string
+
+	if EnableExtraLogging {
+		msg = fmt.Sprintf(
+			`
+input:
+
+%v
+
+output:
+
+%v
+`,
+			input,
+			text,
+		)
+	}
+	return msg, nil
 }
 
 func Example() {
