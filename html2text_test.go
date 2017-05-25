@@ -78,7 +78,11 @@ func TestStrippingWhitespace(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -126,7 +130,11 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -262,7 +270,11 @@ func TestTables(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -290,7 +302,11 @@ func TestStrippingLists(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -370,7 +386,11 @@ func TestLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -415,7 +435,11 @@ func TestImageAltTags(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -455,7 +479,11 @@ func TestHeadings(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -484,7 +512,11 @@ func TestBold(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -513,7 +545,11 @@ func TestDiv(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -554,7 +590,11 @@ func TestBlockquotes(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -607,7 +647,11 @@ func TestIgnoreStylesScriptsHead(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -674,7 +718,11 @@ List:
 	}
 
 	for _, testCase := range testCases {
-		assertRegexp(t, testCase.input, testCase.expr)
+		if msg, err := wantRegExp(testCase.input, testCase.expr); err != nil {
+			t.Error(err)
+		} else {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -701,28 +749,30 @@ func (m ExactStringMatcher) String() string {
 	return string(m)
 }
 
-func assertRegexp(t *testing.T, input string, outputRE string) {
-	assertPlaintext(t, input, RegexpStringMatcher(outputRE))
+func wantRegExp(input string, outputRE string) (string, error) {
+	return assertPlaintext(input, RegexpStringMatcher(outputRE))
 }
 
-func assertString(t *testing.T, input string, output string) {
-	assertPlaintext(t, input, ExactStringMatcher(output))
+func wantString(input string, output string) (string, error) {
+	return assertPlaintext(input, ExactStringMatcher(output))
 }
 
-func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
+func assertPlaintext(input string, matcher StringMatcher) (string, error) {
 	text, err := FromString(input)
 	if err != nil {
-		t.Error(err)
+		return "", err
 	}
 	if !matcher.MatchString(text) {
-		t.Errorf("Input did not match expression\n"+
-			"Input:\n>>>>\n%s\n<<<<\n\n"+
-			"Output:\n>>>>\n%s\n<<<<\n\n"+
-			"Expected output:\n>>>>\n%s\n<<<<\n\n",
-			input, text, matcher.String())
-	} else {
-		t.Logf("input:\n\n%s\n\n\n\noutput:\n\n%s\n", input, text)
+		return "", fmt.Errorf("Input did not match expression\n"+
+			"Input:\n>>>>\n%v\n<<<<\n\n"+
+			"Output:\n>>>>\n%v\n<<<<\n\n"+
+			"Expected output:\n>>>>\n%v\n<<<<\n\n",
+			input,
+			text,
+			matcher.String(),
+		)
 	}
+	return fmt.Sprintf("input:\n\n%v\n\n\n\noutput:\n\n%v\n", input, text), nil
 }
 
 func Example() {
