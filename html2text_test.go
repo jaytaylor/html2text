@@ -152,8 +152,9 @@ func TestParagraphsAndBreaks(t *testing.T) {
 
 func TestTables(t *testing.T) {
 	testCases := []struct {
-		input  string
-		output string
+		input           string
+		tabularOutput   string
+		plaintextOutput string
 	}{
 		{
 			"<table><tr><td></td><td></td></tr></table>",
@@ -162,6 +163,7 @@ func TestTables(t *testing.T) {
 			// |  |  |
 			// +--+--+
 			"+--+--+\n|  |  |\n+--+--+",
+			"",
 		},
 		{
 			"<table><tr><td>cell1</td><td>cell2</td></tr></table>",
@@ -169,6 +171,7 @@ func TestTables(t *testing.T) {
 			// | cell1 | cell2 |
 			// +-------+-------+
 			"+-------+-------+\n| cell1 | cell2 |\n+-------+-------+",
+			"cell1 cell2",
 		},
 		{
 			"<table><tr><td>row1</td></tr><tr><td>row2</td></tr></table>",
@@ -177,6 +180,7 @@ func TestTables(t *testing.T) {
 			// | row2 |
 			// +------+
 			"+------+\n| row1 |\n| row2 |\n+------+",
+			"row1 row2",
 		},
 		{
 			`<table>
@@ -195,6 +199,11 @@ func TestTables(t *testing.T) {
 | Row-1-Col-1-Msg2               |             |
 | Row-2-Col-1                    | Row-2-Col-2 |
 +--------------------------------+-------------+`,
+			`Row-1-Col-1-Msg1
+
+Row-1-Col-1-Msg2
+
+Row-1-Col-2 Row-2-Col-1 Row-2-Col-2`,
 		},
 		{
 			`<table>
@@ -206,6 +215,7 @@ func TestTables(t *testing.T) {
 			// | cell2-1 | cell2-2 |
 			// +---------+---------+
 			"+---------+---------+\n| cell1-1 | cell1-2 |\n| cell2-1 | cell2-2 |\n+---------+---------+",
+			"cell1-1 cell1-2 cell2-1 cell2-2",
 		},
 		{
 			`<table>
@@ -228,6 +238,7 @@ func TestTables(t *testing.T) {
 +-------------+-------------+
 |  FOOTER 1   |  FOOTER 2   |
 +-------------+-------------+`,
+			"Header 1 Header 2 Footer 1 Footer 2 Row 1 Col 1 Row 1 Col 2 Row 2 Col 1 Row 2 Col 2",
 		},
 		// Two tables in same HTML (goal is to test that context is
 		// reinitalized correctly).
@@ -275,15 +286,61 @@ func TestTables(t *testing.T) {
 +---------------------+---------------------+
 |  TABLE 2 FOOTER 1   |  TABLE 2 FOOTER 2   |
 +---------------------+---------------------+`,
+			`Table 1 Header 1 Table 1 Header 2 Table 1 Footer 1 Table 1 Footer 2 Table 1 Row 1 Col 1 Table 1 Row 1 Col 2 Table 1 Row 2 Col 1 Table 1 Row 2 Col 2
+
+Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 1 Col 1 Table 2 Row 1 Col 2 Table 2 Row 2 Col 1 Table 2 Row 2 Col 2`,
 		},
 		{
 			"_<table><tr><td>cell</td></tr></table>_",
 			"_\n\n+------+\n| cell |\n+------+\n\n_",
+			"_\n\ncell\n\n_",
+		},
+		{
+			`<table>
+				<tr>
+					<th>Item</th>
+					<th>Description</th>
+					<th>Price</th>
+				</tr>
+				<tr>
+					<td>Golang</td>
+					<td>Open source programming language that makes it easy to build simple, reliable, and efficient software</td>
+					<td>$10.99</td>
+				</tr>
+				<tr>
+					<td>Hermes</td>
+					<td>Programmatically create beautiful e-mails using Golang.</td>
+					<td>$1.99</td>
+				</tr>
+			</table>`,
+			`+--------+--------------------------------+--------+
+|  ITEM  |          DESCRIPTION           | PRICE  |
++--------+--------------------------------+--------+
+| Golang | Open source programming        | $10.99 |
+|        | language that makes it easy    |        |
+|        | to build simple, reliable, and |        |
+|        | efficient software             |        |
+| Hermes | Programmatically create        | $1.99  |
+|        | beautiful e-mails using        |        |
+|        | Golang.                        |        |
++--------+--------------------------------+--------+`,
+			"Item Description Price Golang Open source programming language that makes it easy to build simple, reliable, and efficient software $10.99 Hermes Programmatically create beautiful e-mails using Golang. $1.99",
 		},
 	}
 
 	for _, testCase := range testCases {
-		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+		options := Options{
+			PrettyTables: true,
+		}
+		// Check pretty tabular ASCII version.
+		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+
+		// Check plain version.
+		if msg, err := wantString(testCase.input, testCase.plaintextOutput); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)
@@ -762,16 +819,16 @@ func (m ExactStringMatcher) String() string {
 	return string(m)
 }
 
-func wantRegExp(input string, outputRE string) (string, error) {
-	return match(input, RegexpStringMatcher(outputRE))
+func wantRegExp(input string, outputRE string, options ...Options) (string, error) {
+	return match(input, RegexpStringMatcher(outputRE), options...)
 }
 
-func wantString(input string, output string) (string, error) {
-	return match(input, ExactStringMatcher(output))
+func wantString(input string, output string, options ...Options) (string, error) {
+	return match(input, ExactStringMatcher(output), options...)
 }
 
-func match(input string, matcher StringMatcher) (string, error) {
-	text, err := FromString(input)
+func match(input string, matcher StringMatcher, options ...Options) (string, error) {
+	text, err := FromString(input, options...)
 	if err != nil {
 		return "", err
 	}
@@ -821,41 +878,53 @@ output:
 
 func Example() {
 	inputHtml := `
-	  <html>
-		<head>
-		  <title>My Mega Service</title>
-		  <link rel=\"stylesheet\" href=\"main.css\">
-		  <style type=\"text/css\">body { color: #fff; }</style>
-		</head>
+<html>
+	<head>
+		<title>My Mega Service</title>
+		<link rel=\"stylesheet\" href=\"main.css\">
+		<style type=\"text/css\">body { color: #fff; }</style>
+	</head>
 
-		<body>
-		  <div class="logo">
-			<a href="http://mymegaservice.com/"><img src="/logo-image.jpg" alt="Mega Service"/></a>
-		  </div>
+	<body>
+		<div class="logo">
+			<a href="http://jaytaylor.com/"><img src="/logo-image.jpg" alt="Mega Service"/></a>
+		</div>
 
-		  <h1>Welcome to your new account on my service!</h1>
+		<h1>Welcome to your new account on my service!</h1>
 
-		  <p>
-			  Here is some more information:
+		<p>
+			Here is some more information:
 
-			  <ul>
-				  <li>Link 1: <a href="https://example.com">Example.com</a></li>
-				  <li>Link 2: <a href="https://example2.com">Example2.com</a></li>
-				  <li>Something else</li>
-			  </ul>
-		  </p>
-		</body>
-	  </html>
-	`
+			<ul>
+				<li>Link 1: <a href="https://example.com">Example.com</a></li>
+				<li>Link 2: <a href="https://example2.com">Example2.com</a></li>
+				<li>Something else</li>
+			</ul>
+		</p>
 
-	text, err := FromString(inputHtml)
+		<table>
+			<thead>
+				<tr><th>Header 1</th><th>Header 2</th></tr>
+			</thead>
+			<tfoot>
+				<tr><td>Footer 1</td><td>Footer 2</td></tr>
+			</tfoot>
+			<tbody>
+				<tr><td>Row 1 Col 1</td><td>Row 1 Col 2</td></tr>
+				<tr><td>Row 2 Col 1</td><td>Row 2 Col 2</td></tr>
+			</tbody>
+		</table>
+	</body>
+</html>`
+
+	text, err := FromString(inputHtml, Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(text)
 
 	// Output:
-	// Mega Service ( http://mymegaservice.com/ )
+	// Mega Service ( http://jaytaylor.com/ )
 	//
 	// ******************************************
 	// Welcome to your new account on my service!
@@ -866,4 +935,13 @@ func Example() {
 	// * Link 1: Example.com ( https://example.com )
 	// * Link 2: Example2.com ( https://example2.com )
 	// * Something else
+	//
+	// +-------------+-------------+
+	// |  HEADER 1   |  HEADER 2   |
+	// +-------------+-------------+
+	// | Row 1 Col 1 | Row 1 Col 2 |
+	// | Row 2 Col 1 | Row 2 Col 2 |
+	// +-------------+-------------+
+	// |  FOOTER 1   |  FOOTER 2   |
+	// +-------------+-------------+
 }
