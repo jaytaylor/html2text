@@ -18,8 +18,8 @@ type Options struct {
 	PrettyTables bool // Turns on pretty ASCII rendering for table elements.
 }
 
-// FromHtmlNode renders text output from a pre-parsed HTML document.
-func FromHtmlNode(doc *html.Node, o ...Options) (string, error) {
+// FromHTMLNode renders text output from a pre-parsed HTML document.
+func FromHTMLNode(doc *html.Node, o ...Options) (string, error) {
 	var options Options
 	if len(o) > 0 {
 		options = o[0]
@@ -39,7 +39,7 @@ func FromHtmlNode(doc *html.Node, o ...Options) (string, error) {
 	return text, nil
 }
 
-// FromReaders renders text output after parsing HTML for the specified
+// FromReader renders text output after parsing HTML for the specified
 // io.Reader.
 func FromReader(reader io.Reader, options ...Options) (string, error) {
 	newReader, err := bom.NewReaderWithoutBom(reader)
@@ -50,7 +50,7 @@ func FromReader(reader io.Reader, options ...Options) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return FromHtmlNode(doc, options...)
+	return FromHTMLNode(doc, options...)
 }
 
 // FromString parses HTML from the input string, then renders the text form.
@@ -73,13 +73,12 @@ type textifyTraverseContext struct {
 	buf bytes.Buffer
 
 	prefix          string
-	blockquoteLevel int
-	lineLength      int
-	endsWithSpace   bool
-	endsWithNewline bool
-	justClosedDiv   bool
 	tableCtx        tableTraverseContext
 	options         Options
+	endsWithSpace   bool
+	justClosedDiv   bool
+	blockquoteLevel int
+	lineLength      int
 }
 
 // tableTraverseContext holds table ASCII-form related context.
@@ -119,7 +118,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 				dividerLen = lineLen - 1
 			}
 		}
-		divider := ""
+		var divider string
 		if node.DataAtom == atom.H1 {
 			divider = strings.Repeat("*", dividerLen)
 		} else {
@@ -162,7 +161,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 			return err
 		}
 		var err error
-		if ctx.justClosedDiv == false {
+		if !ctx.justClosedDiv {
 			err = ctx.emit("\n")
 		}
 		ctx.justClosedDiv = true
@@ -192,7 +191,9 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		// If image is the only child, take its alt text as the link text.
 		if img := node.FirstChild; img != nil && node.LastChild == img && img.DataAtom == atom.Img {
 			if altText := getAttrVal(img, "alt"); altText != "" {
-				ctx.emit(altText)
+				if err := ctx.emit(altText); err != nil {
+					return err
+				}
 			}
 		} else if err := ctx.traverseChildren(node); err != nil {
 			return err
@@ -244,6 +245,7 @@ func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
 	if !ctx.options.PrettyTables {
 		panic("handleTableElement invoked when PrettyTables not active")
 	}
+
 	switch node.DataAtom {
 	case atom.Table:
 		if err := ctx.emit("\n\n"); err != nil {
@@ -305,6 +307,7 @@ func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
 		} else {
 			ctx.tableCtx.body[ctx.tableCtx.tmpRow] = append(ctx.tableCtx.body[ctx.tableCtx.tmpRow], res)
 		}
+
 	}
 	return nil
 }
@@ -369,6 +372,8 @@ func (ctx *textifyTraverseContext) emit(data string) error {
 	return nil
 }
 
+const maxLineLen = 74
+
 func (ctx *textifyTraverseContext) breakLongLines(data string) []string {
 	// Only break lines when in blockquotes.
 	if ctx.blockquoteLevel == 0 {
@@ -380,18 +385,18 @@ func (ctx *textifyTraverseContext) breakLongLines(data string) []string {
 		l        = len(runes)
 		existing = ctx.lineLength
 	)
-	if existing >= 74 {
+	if existing >= maxLineLen {
 		ret = append(ret, "\n")
 		existing = 0
 	}
-	for l+existing > 74 {
-		i := 74 - existing
+	for l+existing > maxLineLen {
+		i := maxLineLen - existing
 		for i >= 0 && !unicode.IsSpace(runes[i]) {
 			i--
 		}
 		if i == -1 {
 			// No spaces, so go the other way.
-			i = 74 - existing
+			i = maxLineLen - existing
 			for i < l && !unicode.IsSpace(runes[i]) {
 				i++
 			}
@@ -421,7 +426,7 @@ func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 func (ctx *textifyTraverseContext) renderEachChild(node *html.Node) (string, error) {
 	buf := &bytes.Buffer{}
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		s, err := FromHtmlNode(c, ctx.options)
+		s, err := FromHTMLNode(c, ctx.options)
 		if err != nil {
 			return "", err
 		}

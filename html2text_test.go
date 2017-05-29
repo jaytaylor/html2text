@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-// TODO Add tests for FromHtmlNode and FromReader.
+// TODO Add tests for FromHTMLNode and FromReader.
 
 func TestParseUTF8(t *testing.T) {
 	htmlFiles := []struct {
@@ -833,7 +833,7 @@ func match(input string, matcher StringMatcher, options ...Options) (string, err
 		return "", err
 	}
 	if !matcher.MatchString(text) {
-		return "", fmt.Errorf(`Error: Input did not match specified expression
+		return "", fmt.Errorf(`error: input did not match specified expression
 Input:
 >>>>
 %v
@@ -847,9 +847,7 @@ Output:
 Expected:
 >>>>
 %v
-<<<<
-
-`,
+<<<<`,
 			input,
 			text,
 			matcher.String(),
@@ -877,7 +875,7 @@ output:
 }
 
 func Example() {
-	inputHtml := `
+	inputHTML := `
 <html>
 	<head>
 		<title>My Mega Service</title>
@@ -917,7 +915,7 @@ func Example() {
 	</body>
 </html>`
 
-	text, err := FromString(inputHtml, Options{PrettyTables: true})
+	text, err := FromString(inputHTML, Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
 	}
