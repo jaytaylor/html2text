@@ -7,29 +7,59 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ssor/bom"
-
 	"github.com/olekukonko/tablewriter"
+	"github.com/ssor/bom"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
+
+// FromHtmlNode renders text output from a pre-parsed HTML document.
+func FromHtmlNode(doc *html.Node) (string, error) {
+	ctx := textifyTraverseContext{
+		buf: bytes.Buffer{},
+	}
+	if err := ctx.traverse(doc); err != nil {
+		return "", err
+	}
+
+	text := strings.TrimSpace(newlineRe.ReplaceAllString(
+		strings.Replace(ctx.buf.String(), "\n ", "\n", -1), "\n\n"),
+	)
+	return text, nil
+}
+
+// FromReaders renders text output after parsing HTML for the specified
+// io.Reader.
+func FromReader(reader io.Reader) (string, error) {
+	newReader, err := bom.NewReaderWithoutBom(reader)
+	if err != nil {
+		return "", err
+	}
+	doc, err := html.Parse(newReader)
+	if err != nil {
+		return "", err
+	}
+	return FromHtmlNode(doc)
+}
+
+// FromString parses HTML from the input string, then renders the text form.
+func FromString(input string) (string, error) {
+	bs := bom.CleanBom([]byte(input))
+	text, err := FromReader(bytes.NewReader(bs))
+	if err != nil {
+		return "", err
+	}
+	return text, nil
+}
 
 var (
 	spacingRe = regexp.MustCompile(`[ \r\n\t]+`)
 	newlineRe = regexp.MustCompile(`\n\n+`)
 )
 
-// variables for table related context
-type traverseTableCtx struct {
-	header     []string
-	body       [][]string
-	footer     []string
-	tmpRow     int
-	isInFooter bool
-}
-
-type textifyTraverseCtx struct {
-	Buf bytes.Buffer
+// traverseTableCtx holds text-related context.
+type textifyTraverseContext struct {
+	buf bytes.Buffer
 
 	prefix          string
 	blockquoteLevel int
@@ -37,10 +67,19 @@ type textifyTraverseCtx struct {
 	endsWithSpace   bool
 	endsWithNewline bool
 	justClosedDiv   bool
-	tableCtx        traverseTableCtx
+	tableCtx        tableTraverseContext
 }
 
-func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
+// tableTraverseContext holds table ASCII-form related context.
+type tableTraverseContext struct {
+	header     []string
+	body       [][]string
+	footer     []string
+	tmpRow     int
+	isInFooter bool
+}
+
+func (ctx *textifyTraverseContext) traverse(node *html.Node) error {
 	switch node.Type {
 	default:
 		return ctx.traverseChildren(node)
@@ -54,19 +93,19 @@ func (ctx *textifyTraverseCtx) traverse(node *html.Node) error {
 	}
 }
 
-func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
+func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
 	ctx.justClosedDiv = false
 	switch node.DataAtom {
 	case atom.Br:
 		return ctx.emit("\n")
 
 	case atom.H1, atom.H2, atom.H3:
-		subCtx := textifyTraverseCtx{}
+		subCtx := textifyTraverseContext{}
 		if err := subCtx.traverseChildren(node); err != nil {
 			return err
 		}
 
-		str := subCtx.Buf.String()
+		str := subCtx.buf.String()
 		dividerLen := 0
 		for _, line := range strings.Split(str, "\n") {
 			if lineLen := len([]rune(line)); lineLen-1 > dividerLen {
@@ -134,16 +173,16 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		return ctx.emit("\n")
 
 	case atom.B, atom.Strong:
-		subCtx := textifyTraverseCtx{}
+		subCtx := textifyTraverseContext{}
 		subCtx.endsWithSpace = true
 		if err := subCtx.traverseChildren(node); err != nil {
 			return err
 		}
-		str := subCtx.Buf.String()
+		str := subCtx.buf.String()
 		return ctx.emit("*" + str + "*")
 
 	case atom.A:
-		// If image is the only child, take its alt text as the link text
+		// If image is the only child, take its alt text as the link text.
 		if img := node.FirstChild; img != nil && node.LastChild == img && img.DataAtom == atom.Img {
 			if altText := getAttrVal(img, "alt"); altText != "" {
 				ctx.emit(altText)
@@ -172,18 +211,19 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		}
 
 		return ctx.emit("\n\n")
+
 	case atom.Table:
 		if err := ctx.emit("\n\n"); err != nil {
 			return err
 		}
-		// re-intialize all table context
+		// Re-intialize all table context.
 		ctx.tableCtx.body = [][]string{}
 		ctx.tableCtx.header = []string{}
 		ctx.tableCtx.footer = []string{}
 		ctx.tableCtx.isInFooter = false
 		ctx.tableCtx.tmpRow = 0
 
-		// Browse children, enriching context with table data
+		// Browse children, enriching context with table data.
 		if err := ctx.traverseChildren(node); err != nil {
 			return err
 		}
@@ -194,13 +234,14 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		table.SetFooter(ctx.tableCtx.footer)
 		table.AppendBulk(ctx.tableCtx.body)
 
-		// Print the table
+		// Render the table using ASCII.
 		table.Render()
 		if err := ctx.emit(buf.String()); err != nil {
 			return err
 		}
 
 		return ctx.emit("\n\n")
+
 	case atom.Tfoot:
 		ctx.tableCtx.isInFooter = true
 		if err := ctx.traverseChildren(node); err != nil {
@@ -209,8 +250,8 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		ctx.tableCtx.isInFooter = false
 
 		return nil
-	case atom.Tr:
 
+	case atom.Tr:
 		ctx.tableCtx.body = append(ctx.tableCtx.body, []string{})
 		if err := ctx.traverseChildren(node); err != nil {
 			return err
@@ -218,8 +259,8 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		ctx.tableCtx.tmpRow++
 
 		return nil
-	case atom.Th:
 
+	case atom.Th:
 		res, err := getContentAsString(node)
 		if err != nil {
 			return err
@@ -228,8 +269,8 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		ctx.tableCtx.header = append(ctx.tableCtx.header, res)
 
 		return nil
-	case atom.Td:
 
+	case atom.Td:
 		res, err := getContentAsString(node)
 		if err != nil {
 			return err
@@ -244,7 +285,7 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 		return nil
 
 	case atom.Style, atom.Script, atom.Head:
-		// Ignore the subtree
+		// Ignore the subtree.
 		return nil
 
 	default:
@@ -252,7 +293,7 @@ func (ctx *textifyTraverseCtx) handleElementNode(node *html.Node) error {
 	}
 }
 
-func (ctx *textifyTraverseCtx) traverseChildren(node *html.Node) error {
+func (ctx *textifyTraverseContext) traverseChildren(node *html.Node) error {
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		if err := ctx.traverse(c); err != nil {
 			return err
@@ -262,31 +303,33 @@ func (ctx *textifyTraverseCtx) traverseChildren(node *html.Node) error {
 	return nil
 }
 
-func (ctx *textifyTraverseCtx) emit(data string) error {
-	if len(data) == 0 {
+func (ctx *textifyTraverseContext) emit(data string) error {
+	if data == "" {
 		return nil
 	}
-	lines := ctx.breakLongLines(data)
-	var err error
+	var (
+		lines = ctx.breakLongLines(data)
+		err   error
+	)
 	for _, line := range lines {
 		runes := []rune(line)
 		startsWithSpace := unicode.IsSpace(runes[0])
 		if !startsWithSpace && !ctx.endsWithSpace {
-			ctx.Buf.WriteByte(' ')
+			if err = ctx.buf.WriteByte(' '); err != nil {
+				return err
+			}
 			ctx.lineLength++
 		}
 		ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1])
 		for _, c := range line {
-			_, err = ctx.Buf.WriteString(string(c))
-			if err != nil {
+			if _, err = ctx.buf.WriteString(string(c)); err != nil {
 				return err
 			}
 			ctx.lineLength++
 			if c == '\n' {
 				ctx.lineLength = 0
 				if ctx.prefix != "" {
-					_, err = ctx.Buf.WriteString(ctx.prefix)
-					if err != nil {
+					if _, err = ctx.buf.WriteString(ctx.prefix); err != nil {
 						return err
 					}
 				}
@@ -296,15 +339,17 @@ func (ctx *textifyTraverseCtx) emit(data string) error {
 	return nil
 }
 
-func (ctx *textifyTraverseCtx) breakLongLines(data string) []string {
-	// only break lines when we are in blockquotes
+func (ctx *textifyTraverseContext) breakLongLines(data string) []string {
+	// Only break lines when in blockquotes.
 	if ctx.blockquoteLevel == 0 {
 		return []string{data}
 	}
-	var ret []string
-	runes := []rune(data)
-	l := len(runes)
-	existing := ctx.lineLength
+	var (
+		ret      = []string{}
+		runes    = []rune(data)
+		l        = len(runes)
+		existing = ctx.lineLength
+	)
 	if existing >= 74 {
 		ret = append(ret, "\n")
 		existing = 0
@@ -315,7 +360,7 @@ func (ctx *textifyTraverseCtx) breakLongLines(data string) []string {
 			i--
 		}
 		if i == -1 {
-			// no spaces, so go the other way
+			// No spaces, so go the other way.
 			i = 74 - existing
 			for i < l && !unicode.IsSpace(runes[i]) {
 				i++
@@ -335,7 +380,7 @@ func (ctx *textifyTraverseCtx) breakLongLines(data string) []string {
 	return ret
 }
 
-func (ctx *textifyTraverseCtx) normalizeHrefLink(link string) string {
+func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 	link = strings.TrimSpace(link)
 	link = strings.TrimPrefix(link, "mailto:")
 	return link
@@ -365,39 +410,4 @@ func getContentAsString(node *html.Node) (string, error) {
 		}
 	}
 	return res, nil
-}
-
-func FromHtmlNode(doc *html.Node) (string, error) {
-	ctx := textifyTraverseCtx{
-		Buf: bytes.Buffer{},
-	}
-	if err := ctx.traverse(doc); err != nil {
-		return "", err
-	}
-
-	text := strings.TrimSpace(newlineRe.ReplaceAllString(
-		strings.Replace(ctx.Buf.String(), "\n ", "\n", -1), "\n\n"))
-	return text, nil
-
-}
-
-func FromReader(reader io.Reader) (string, error) {
-	newReader, err := bom.NewReaderWithoutBom(reader)
-	if err != nil {
-		return "", err
-	}
-	doc, err := html.Parse(newReader)
-	if err != nil {
-		return "", err
-	}
-	return FromHtmlNode(doc)
-}
-
-func FromString(input string) (string, error) {
-	bs := bom.CleanBom([]byte(input))
-	text, err := FromReader(bytes.NewReader(bs))
-	if err != nil {
-		return "", err
-	}
-	return text, nil
 }

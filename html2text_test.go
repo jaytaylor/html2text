@@ -4,15 +4,27 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"strings"
 	"testing"
 )
 
-const (
-	destPath = "testdata"
-)
+const destPath = "testdata"
+
+// EnableExtraLogging turns on additional testing log output.
+// Extra test logging can be enabled by setting the environment variable
+// HTML2TEXT_EXTRA_LOGGING to "1" or "true".
+var EnableExtraLogging bool
+
+func init() {
+	if v := os.Getenv("HTML2TEXT_EXTRA_LOGGING"); v == "1" || v == "true" {
+		EnableExtraLogging = true
+	}
+}
+
+// TODO Add tests for FromHtmlNode and FromReader.
 
 func TestParseUTF8(t *testing.T) {
 	htmlFiles := []struct {
@@ -78,7 +90,11 @@ func TestStrippingWhitespace(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -126,7 +142,11 @@ func TestParagraphsAndBreaks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -209,7 +229,8 @@ func TestTables(t *testing.T) {
 |  FOOTER 1   |  FOOTER 2   |
 +-------------+-------------+`,
 		},
-		// Two tables in same HTML (goal is to test that context is reinitalized correctly)
+		// Two tables in same HTML (goal is to test that context is
+		// reinitalized correctly).
 		{
 			`<p>
 				<table>
@@ -262,7 +283,11 @@ func TestTables(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -290,7 +315,11 @@ func TestStrippingLists(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -370,7 +399,11 @@ func TestLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -395,7 +428,7 @@ func TestImageAltTags(t *testing.T) {
 			`<img src="http://example.ru/hello.jpg" alt="Example"/>`,
 			``,
 		},
-		// Images do matter if they are in a link
+		// Images do matter if they are in a link.
 		{
 			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"/></a>`,
 			`Example ( http://example.com/ )`,
@@ -415,7 +448,11 @@ func TestImageAltTags(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -455,7 +492,11 @@ func TestHeadings(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -484,7 +525,11 @@ func TestBold(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -513,7 +558,11 @@ func TestDiv(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -554,7 +603,11 @@ func TestBlockquotes(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 
 }
@@ -607,7 +660,11 @@ func TestIgnoreStylesScriptsHead(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		assertString(t, testCase.input, testCase.output)
+		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -674,7 +731,11 @@ List:
 	}
 
 	for _, testCase := range testCases {
-		assertRegexp(t, testCase.input, testCase.expr)
+		if msg, err := wantRegExp(testCase.input, testCase.expr); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
 	}
 }
 
@@ -701,28 +762,61 @@ func (m ExactStringMatcher) String() string {
 	return string(m)
 }
 
-func assertRegexp(t *testing.T, input string, outputRE string) {
-	assertPlaintext(t, input, RegexpStringMatcher(outputRE))
+func wantRegExp(input string, outputRE string) (string, error) {
+	return match(input, RegexpStringMatcher(outputRE))
 }
 
-func assertString(t *testing.T, input string, output string) {
-	assertPlaintext(t, input, ExactStringMatcher(output))
+func wantString(input string, output string) (string, error) {
+	return match(input, ExactStringMatcher(output))
 }
 
-func assertPlaintext(t *testing.T, input string, matcher StringMatcher) {
+func match(input string, matcher StringMatcher) (string, error) {
 	text, err := FromString(input)
 	if err != nil {
-		t.Error(err)
+		return "", err
 	}
 	if !matcher.MatchString(text) {
-		t.Errorf("Input did not match expression\n"+
-			"Input:\n>>>>\n%s\n<<<<\n\n"+
-			"Output:\n>>>>\n%s\n<<<<\n\n"+
-			"Expected output:\n>>>>\n%s\n<<<<\n\n",
-			input, text, matcher.String())
-	} else {
-		t.Logf("input:\n\n%s\n\n\n\noutput:\n\n%s\n", input, text)
+		return "", fmt.Errorf(`Error: Input did not match specified expression
+Input:
+>>>>
+%v
+<<<<
+
+Output:
+>>>>
+%v
+<<<<
+
+Expected:
+>>>>
+%v
+<<<<
+
+`,
+			input,
+			text,
+			matcher.String(),
+		)
 	}
+
+	var msg string
+
+	if EnableExtraLogging {
+		msg = fmt.Sprintf(
+			`
+input:
+
+%v
+
+output:
+
+%v
+`,
+			input,
+			text,
+		)
+	}
+	return msg, nil
 }
 
 func Example() {
