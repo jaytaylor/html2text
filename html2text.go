@@ -13,10 +13,21 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// Options provide toggles and overrides to control specific rendering behaviors.
+type Options struct {
+	PrettyTables bool // Turns on pretty ASCII rendering for table elements.
+}
+
 // FromHtmlNode renders text output from a pre-parsed HTML document.
-func FromHtmlNode(doc *html.Node) (string, error) {
+func FromHtmlNode(doc *html.Node, o ...Options) (string, error) {
+	var options Options
+	if len(o) > 0 {
+		options = o[0]
+	}
+
 	ctx := textifyTraverseContext{
-		buf: bytes.Buffer{},
+		buf:     bytes.Buffer{},
+		options: options,
 	}
 	if err := ctx.traverse(doc); err != nil {
 		return "", err
@@ -30,7 +41,7 @@ func FromHtmlNode(doc *html.Node) (string, error) {
 
 // FromReaders renders text output after parsing HTML for the specified
 // io.Reader.
-func FromReader(reader io.Reader) (string, error) {
+func FromReader(reader io.Reader, options ...Options) (string, error) {
 	newReader, err := bom.NewReaderWithoutBom(reader)
 	if err != nil {
 		return "", err
@@ -39,13 +50,13 @@ func FromReader(reader io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return FromHtmlNode(doc)
+	return FromHtmlNode(doc, options...)
 }
 
 // FromString parses HTML from the input string, then renders the text form.
-func FromString(input string) (string, error) {
+func FromString(input string, options ...Options) (string, error) {
 	bs := bom.CleanBom([]byte(input))
-	text, err := FromReader(bytes.NewReader(bs))
+	text, err := FromReader(bytes.NewReader(bs), options...)
 	if err != nil {
 		return "", err
 	}
@@ -68,6 +79,7 @@ type textifyTraverseContext struct {
 	endsWithNewline bool
 	justClosedDiv   bool
 	tableCtx        tableTraverseContext
+	options         Options
 }
 
 // tableTraverseContext holds table ASCII-form related context.
@@ -79,22 +91,17 @@ type tableTraverseContext struct {
 	isInFooter bool
 }
 
-func (ctx *textifyTraverseContext) traverse(node *html.Node) error {
-	switch node.Type {
-	default:
-		return ctx.traverseChildren(node)
-
-	case html.TextNode:
-		data := strings.Trim(spacingRe.ReplaceAllString(node.Data, " "), " ")
-		return ctx.emit(data)
-
-	case html.ElementNode:
-		return ctx.handleElementNode(node)
-	}
+func (tableCtx *tableTraverseContext) init() {
+	tableCtx.body = [][]string{}
+	tableCtx.header = []string{}
+	tableCtx.footer = []string{}
+	tableCtx.isInFooter = false
+	tableCtx.tmpRow = 0
 }
 
-func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
+func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 	ctx.justClosedDiv = false
+
 	switch node.DataAtom {
 	case atom.Br:
 		return ctx.emit("\n")
@@ -202,33 +209,56 @@ func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
 		return ctx.emit(hrefLink)
 
 	case atom.P, atom.Ul:
-		if err := ctx.emit("\n\n"); err != nil {
-			return err
+		return ctx.paragraphHandler(node)
+
+	case atom.Table, atom.Tfoot, atom.Th, atom.Tr, atom.Td:
+		if ctx.options.PrettyTables {
+			return ctx.handleTableElement(node)
+		} else if node.DataAtom == atom.Table {
+			return ctx.paragraphHandler(node)
 		}
+		return ctx.traverseChildren(node)
 
-		if err := ctx.traverseChildren(node); err != nil {
-			return err
-		}
+	case atom.Style, atom.Script, atom.Head:
+		// Ignore the subtree.
+		return nil
 
-		return ctx.emit("\n\n")
+	default:
+		return ctx.traverseChildren(node)
+	}
+}
 
+// paragraphHandler renders node children surrounded by double newlines.
+func (ctx *textifyTraverseContext) paragraphHandler(node *html.Node) error {
+	if err := ctx.emit("\n\n"); err != nil {
+		return err
+	}
+	if err := ctx.traverseChildren(node); err != nil {
+		return err
+	}
+	return ctx.emit("\n\n")
+}
+
+// handleTableElement is only to be invoked when options.PrettyTables is active.
+func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
+	if !ctx.options.PrettyTables {
+		panic("handleTableElement invoked when PrettyTables not active")
+	}
+	switch node.DataAtom {
 	case atom.Table:
 		if err := ctx.emit("\n\n"); err != nil {
 			return err
 		}
+
 		// Re-intialize all table context.
-		ctx.tableCtx.body = [][]string{}
-		ctx.tableCtx.header = []string{}
-		ctx.tableCtx.footer = []string{}
-		ctx.tableCtx.isInFooter = false
-		ctx.tableCtx.tmpRow = 0
+		ctx.tableCtx.init()
 
 		// Browse children, enriching context with table data.
 		if err := ctx.traverseChildren(node); err != nil {
 			return err
 		}
 
-		buf := new(bytes.Buffer)
+		buf := &bytes.Buffer{}
 		table := tablewriter.NewWriter(buf)
 		table.SetHeader(ctx.tableCtx.header)
 		table.SetFooter(ctx.tableCtx.footer)
@@ -249,8 +279,6 @@ func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
 		}
 		ctx.tableCtx.isInFooter = false
 
-		return nil
-
 	case atom.Tr:
 		ctx.tableCtx.body = append(ctx.tableCtx.body, []string{})
 		if err := ctx.traverseChildren(node); err != nil {
@@ -258,20 +286,16 @@ func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
 		}
 		ctx.tableCtx.tmpRow++
 
-		return nil
-
 	case atom.Th:
-		res, err := getContentAsString(node)
+		res, err := ctx.renderEachChild(node)
 		if err != nil {
 			return err
 		}
 
 		ctx.tableCtx.header = append(ctx.tableCtx.header, res)
 
-		return nil
-
 	case atom.Td:
-		res, err := getContentAsString(node)
+		res, err := ctx.renderEachChild(node)
 		if err != nil {
 			return err
 		}
@@ -281,15 +305,21 @@ func (ctx *textifyTraverseContext) handleElementNode(node *html.Node) error {
 		} else {
 			ctx.tableCtx.body[ctx.tableCtx.tmpRow] = append(ctx.tableCtx.body[ctx.tableCtx.tmpRow], res)
 		}
+	}
+	return nil
+}
 
-		return nil
-
-	case atom.Style, atom.Script, atom.Head:
-		// Ignore the subtree.
-		return nil
-
+func (ctx *textifyTraverseContext) traverse(node *html.Node) error {
+	switch node.Type {
 	default:
 		return ctx.traverseChildren(node)
+
+	case html.TextNode:
+		data := strings.Trim(spacingRe.ReplaceAllString(node.Data, " "), " ")
+		return ctx.emit(data)
+
+	case html.ElementNode:
+		return ctx.handleElement(node)
 	}
 }
 
@@ -386,6 +416,27 @@ func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 	return link
 }
 
+// renderEachChild visits each direct child of a node and collects the sequence of
+// textuual representaitons separated by a single newline.
+func (ctx *textifyTraverseContext) renderEachChild(node *html.Node) (string, error) {
+	buf := &bytes.Buffer{}
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		s, err := FromHtmlNode(c, ctx.options)
+		if err != nil {
+			return "", err
+		}
+		if _, err = buf.WriteString(s); err != nil {
+			return "", err
+		}
+		if c.NextSibling != nil {
+			if err = buf.WriteByte('\n'); err != nil {
+				return "", err
+			}
+		}
+	}
+	return buf.String(), nil
+}
+
 func getAttrVal(node *html.Node, attrName string) string {
 	for _, attr := range node.Attr {
 		if attr.Key == attrName {
@@ -394,20 +445,4 @@ func getAttrVal(node *html.Node, attrName string) string {
 	}
 
 	return ""
-}
-
-// getContentAsString browse every child of node and get content as string
-func getContentAsString(node *html.Node) (string, error) {
-	var res string
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		s, err := FromHtmlNode(c)
-		if err != nil {
-			return "", err
-		}
-		res += s
-		if c.NextSibling != nil {
-			res += "\n"
-		}
-	}
-	return res, nil
 }
