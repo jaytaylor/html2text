@@ -38,7 +38,7 @@ import (
 )
 
 func main() {
-	inputHtml := `
+	inputHTML := `
 <html>
   <head>
     <title>My Mega Service</title>
@@ -78,7 +78,7 @@ func main() {
   </body>
 </html>`
 
-	text, err := FromString(inputHtml, Options{PrettyTables: true})
+	text, err := FromString(inputHTML, Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
 	}
