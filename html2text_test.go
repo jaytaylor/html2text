@@ -453,6 +453,10 @@ func TestLinks(t *testing.T) {
 			"<p>This is <a href=\"http://www.google.com\" >link1</a> and <a href=\"http://www.google.com\" >link2 </a> is next.</p>",
 			`This is link1 ( http://www.google.com ) and link2 ( http://www.google.com ) is next.`,
 		},
+		{
+			"<a href=\"http://www.google.com\" >http://www.google.com</a>",
+			`http://www.google.com`,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -784,6 +788,30 @@ List:
 \* Foo \( foo \)
 \* Bar \( /\n[ \t]+bar/baz \)
 \* Baz`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		if msg, err := wantRegExp(testCase.input, testCase.expr); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
+func TestPeriod(t *testing.T) {
+	testCases := []struct {
+		input string
+		expr  string
+	}{
+		{
+			`<p>Lorem ipsum <span>test</span>.</p>`,
+			`Lorem ipsum test\.`,
+		},
+		{
+			`<p>Lorem ipsum <span>test.</span></p>`,
+			`Lorem ipsum test\.`,
 		},
 	}
 
