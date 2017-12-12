@@ -468,6 +468,54 @@ func TestLinks(t *testing.T) {
 	}
 }
 
+func TestOmitLinks(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			`<a></a>`,
+			``,
+		},
+		{
+			`<a href=""></a>`,
+			``,
+		},
+		{
+			`<a href="http://example.com/"></a>`,
+			``,
+		},
+		{
+			`<a href="">Link</a>`,
+			`Link`,
+		},
+		{
+			`<a href="http://example.com/">Link</a>`,
+			`Link`,
+		},
+		{
+			`<a href="http://example.com/"><span class="a">Link</span></a>`,
+			`Link`,
+		},
+		{
+			"<a href='http://example.com/'>\n\t<span class='a'>Link</span>\n\t</a>",
+			`Link`,
+		},
+		{
+			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"></a>`,
+			`Example`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		if msg, err := wantString(testCase.input, testCase.output, Options{OmitLinks:true}); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
 func TestImageAltTags(t *testing.T) {
 	testCases := []struct {
 		input  string

@@ -16,6 +16,7 @@ import (
 // Options provide toggles and overrides to control specific rendering behaviors.
 type Options struct {
 	PrettyTables bool // Turns on pretty ASCII rendering for table elements.
+	OmitLinks bool    // Turns on omitting links
 }
 
 // FromHTMLNode renders text output from a pre-parsed HTML document.
@@ -209,7 +210,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		if attrVal := getAttrVal(node, "href"); attrVal != "" {
 			attrVal = ctx.normalizeHrefLink(attrVal)
 			// Don't print link href if it matches link element content or if the link is empty.
-			if attrVal != "" && linkText != attrVal {
+			if !ctx.options.OmitLinks && attrVal != "" && linkText != attrVal {
 				hrefLink = "( " + attrVal + " )"
 			}
 		}
