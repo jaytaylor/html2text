@@ -139,6 +139,10 @@ func TestParagraphsAndBreaks(t *testing.T) {
 			"Test text<br><BR />Test text",
 			"Test text\n\nTest text",
 		},
+		{
+			"<pre>test1\ntest 2\n\ntest  3</pre>",
+			"test1\ntest 2\n\ntest  3",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -792,7 +796,7 @@ func TestText(t *testing.T) {
 			`hi
 
 			<br>
-	
+
 	hello <a href="https://google.com">google</a>
 	<br><br>
 	test<p>List:</p>
