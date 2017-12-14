@@ -80,6 +80,7 @@ type textifyTraverseContext struct {
 	justClosedDiv   bool
 	blockquoteLevel int
 	lineLength      int
+	isPre           bool
 }
 
 // tableTraverseContext holds table ASCII-form related context.
@@ -228,6 +229,12 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		}
 		return ctx.traverseChildren(node)
 
+	case atom.Pre:
+		ctx.isPre = true
+		err := ctx.traverseChildren(node)
+		ctx.isPre = false
+		return err
+
 	case atom.Style, atom.Script, atom.Head:
 		// Ignore the subtree.
 		return nil
@@ -326,7 +333,12 @@ func (ctx *textifyTraverseContext) traverse(node *html.Node) error {
 		return ctx.traverseChildren(node)
 
 	case html.TextNode:
-		data := strings.Trim(spacingRe.ReplaceAllString(node.Data, " "), " ")
+		var data string
+		if ctx.isPre {
+			data = node.Data
+		} else {
+			data = strings.Trim(spacingRe.ReplaceAllString(node.Data, " "), " ")
+		}
 		return ctx.emit(data)
 
 	case html.ElementNode:
