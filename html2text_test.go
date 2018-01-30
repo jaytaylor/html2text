@@ -512,7 +512,7 @@ func TestOmitLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		if msg, err := wantString(testCase.input, testCase.output, Options{OmitLinks:true}); err != nil {
+		if msg, err := wantString(testCase.input, testCase.output, Options{OmitLinks: true}); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)
