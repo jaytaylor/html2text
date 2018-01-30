@@ -189,21 +189,21 @@ func TestTables(t *testing.T) {
 		{
 			`<table>
 				<tbody>
-					<tr><td><p>Row-1-Col-1-Msg1</p><p>Row-1-Col-1-Msg2</p></td><td>Row-1-Col-2</td></tr>
+					<tr><td><p>Row-1-Col-1-Msg123456789012345</p><p>Row-1-Col-1-Msg2</p></td><td>Row-1-Col-2</td></tr>
 					<tr><td>Row-2-Col-1</td><td>Row-2-Col-2</td></tr>
 				</tbody>
 			</table>`,
 			// +--------------------------------+-------------+
-			// | Row-1-Col-1-Msg1               | Row-1-Col-2 |
+			// | Row-1-Col-1-Msg123456789012345 | Row-1-Col-2 |
 			// | Row-1-Col-1-Msg2               |             |
 			// | Row-2-Col-1                    | Row-2-Col-2 |
 			// +--------------------------------+-------------+
 			`+--------------------------------+-------------+
-| Row-1-Col-1-Msg1               | Row-1-Col-2 |
+| Row-1-Col-1-Msg123456789012345 | Row-1-Col-2 |
 | Row-1-Col-1-Msg2               |             |
 | Row-2-Col-1                    | Row-2-Col-2 |
 +--------------------------------+-------------+`,
-			`Row-1-Col-1-Msg1
+			`Row-1-Col-1-Msg123456789012345
 
 Row-1-Col-1-Msg2
 
