@@ -78,7 +78,7 @@ func main() {
   </body>
 </html>`
 
-	text, err := FromString(inputHTML, Options{PrettyTables: true})
+	text, err := html2text.FromString(inputHTML, html2text.Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
 	}
