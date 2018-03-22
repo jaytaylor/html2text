@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/jaytaylor/html2text.svg?branch=master)](https://travis-ci.org/jaytaylor/html2text)
 [![Report Card](https://goreportcard.com/badge/github.com/jaytaylor/html2text)](https://goreportcard.com/report/github.com/jaytaylor/html2text)
 
-### Converts HTML into text
+### Converts HTML into text of the markdown-flavored variety
 
 
 ## Introduction
