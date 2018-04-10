@@ -54,7 +54,7 @@ func TestParseUTF8(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !strings.Contains(text, htmlFile.keywordShouldExist) {
-			t.Fatalf("keyword %s should  exists in file %s", htmlFile.keywordShouldExist, htmlFile.file)
+			t.Fatalf("keyword %s should exist in file %s", htmlFile.keywordShouldExist, htmlFile.file)
 		}
 		if strings.Contains(text, htmlFile.keywordShouldNotExist) {
 			t.Fatalf("keyword %s should not exists in file %s", htmlFile.keywordShouldNotExist, htmlFile.file)
