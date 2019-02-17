@@ -156,9 +156,10 @@ func TestParagraphsAndBreaks(t *testing.T) {
 
 func TestTables(t *testing.T) {
 	testCases := []struct {
-		input           string
-		tabularOutput   string
-		plaintextOutput string
+		input                string
+		tabularOutput        string
+		plaintextOutput      string
+		omitTableNodesOutput string
 	}{
 		{
 			"<table><tr><td></td><td></td></tr></table>",
@@ -168,6 +169,7 @@ func TestTables(t *testing.T) {
 			// +--+--+
 			"+--+--+\n|  |  |\n+--+--+",
 			"",
+			"[Table]",
 		},
 		{
 			"<table><tr><td>cell1</td><td>cell2</td></tr></table>",
@@ -176,6 +178,7 @@ func TestTables(t *testing.T) {
 			// +-------+-------+
 			"+-------+-------+\n| cell1 | cell2 |\n+-------+-------+",
 			"cell1 cell2",
+			"[Table]",
 		},
 		{
 			"<table><tr><td>row1</td></tr><tr><td>row2</td></tr></table>",
@@ -185,6 +188,7 @@ func TestTables(t *testing.T) {
 			// +------+
 			"+------+\n| row1 |\n| row2 |\n+------+",
 			"row1 row2",
+			"[Table]",
 		},
 		{
 			`<table>
@@ -208,6 +212,7 @@ func TestTables(t *testing.T) {
 Row-1-Col-1-Msg2
 
 Row-1-Col-2 Row-2-Col-1 Row-2-Col-2`,
+			"[Table]",
 		},
 		{
 			`<table>
@@ -220,6 +225,7 @@ Row-1-Col-2 Row-2-Col-1 Row-2-Col-2`,
 			// +---------+---------+
 			"+---------+---------+\n| cell1-1 | cell1-2 |\n| cell2-1 | cell2-2 |\n+---------+---------+",
 			"cell1-1 cell1-2 cell2-1 cell2-2",
+			"[Table]",
 		},
 		{
 			`<table>
@@ -243,6 +249,7 @@ Row-1-Col-2 Row-2-Col-1 Row-2-Col-2`,
 |  FOOTER 1   |  FOOTER 2   |
 +-------------+-------------+`,
 			"Header 1 Header 2 Footer 1 Footer 2 Row 1 Col 1 Row 1 Col 2 Row 2 Col 1 Row 2 Col 2",
+			"[Table]",
 		},
 		// Two tables in same HTML (goal is to test that context is
 		// reinitialized correctly).
@@ -293,11 +300,13 @@ Row-1-Col-2 Row-2-Col-1 Row-2-Col-2`,
 			`Table 1 Header 1 Table 1 Header 2 Table 1 Footer 1 Table 1 Footer 2 Table 1 Row 1 Col 1 Table 1 Row 1 Col 2 Table 1 Row 2 Col 1 Table 1 Row 2 Col 2
 
 Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 1 Col 1 Table 2 Row 1 Col 2 Table 2 Row 2 Col 1 Table 2 Row 2 Col 2`,
+			"[Table]\n\n[Table]",
 		},
 		{
 			"_<table><tr><td>cell</td></tr></table>_",
 			"_\n\n+------+\n| cell |\n+------+\n\n_",
 			"_\n\ncell\n\n_",
+			"_\n\n[Table]\n\n_",
 		},
 		{
 			`<table>
@@ -329,15 +338,21 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 |        | Golang.                        |        |
 +--------+--------------------------------+--------+`,
 			"Item Description Price Golang Open source programming language that makes it easy to build simple, reliable, and efficient software $10.99 Hermes Programmatically create beautiful e-mails using Golang. $1.99",
+			"[Table]",
 		},
 	}
 
 	for _, testCase := range testCases {
-		options := Options{
+		optionsPrettyTables := Options{
 			PrettyTables: true,
 		}
+
+		optionsOmitTableNodes := Options{
+			OmitTableNodes: true,
+		}
+
 		// Check pretty tabular ASCII version.
-		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
+		if msg, err := wantString(testCase.input, testCase.tabularOutput, optionsPrettyTables); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)
@@ -345,6 +360,13 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 
 		// Check plain version.
 		if msg, err := wantString(testCase.input, testCase.plaintextOutput); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+
+		// Check OmitTableNodes version.
+		if msg, err := wantString(testCase.input, testCase.omitTableNodesOutput, optionsOmitTableNodes); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)

@@ -16,6 +16,7 @@ import (
 
 // Options provide toggles and overrides to control specific rendering behaviors.
 type Options struct {
+	OmitTableNodes     bool // Turns on omitting tables and any content inside
 	PrettyTables       bool // Turns on pretty ASCII rendering for table elements.
 	OmitLinks          bool // Turns on omitting links
 	CitationStyleLinks bool // Uses citation style links like [1]
@@ -243,12 +244,16 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		return ctx.paragraphHandler(node)
 
 	case atom.Table, atom.Tfoot, atom.Th, atom.Tr, atom.Td:
-		if ctx.options.PrettyTables {
-			return ctx.handleTableElement(node)
-		} else if node.DataAtom == atom.Table {
-			return ctx.paragraphHandler(node)
+		if !ctx.options.OmitTableNodes {
+			if ctx.options.PrettyTables {
+				return ctx.handleTableElement(node)
+			} else if node.DataAtom == atom.Table {
+				return ctx.paragraphHandler(node)
+			}
+			return ctx.traverseChildren(node)
+		} else {
+			return ctx.emit("\n\n[Table]\n\n")
 		}
-		return ctx.traverseChildren(node)
 
 	case atom.Pre:
 		ctx.isPre = true
