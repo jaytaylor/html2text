@@ -520,6 +520,54 @@ func TestOmitLinks(t *testing.T) {
 	}
 }
 
+func TestCitationStyleLinks(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			`<a></a>`,
+			``,
+		},
+		{
+			`<a href=""></a>`,
+			``,
+		},
+		{
+			`<a href="http://example.com/"></a>`,
+			"[1]\n\n[1] http://example.com/",
+		},
+		{
+			`<a href="">Link</a>`,
+			"Link",
+		},
+		{
+			`<a href="http://example1.com/">Link1</a><a href="http://example2.com/">Link2</a>`,
+			"Link1 [1] Link2 [2]\n\n[1] http://example1.com/\n[2] http://example2.com/",
+		},
+		{
+			`<a href="http://example.com/"><span class="a">Link</span></a>`,
+			"Link [1]\n\n[1] http://example.com/",
+		},
+		{
+			"<a href='http://example.com/'>\n\t<span class='a'>Link</span>\n\t</a>",
+			"Link [1]\n\n[1] http://example.com/",
+		},
+		{
+			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"></a>`,
+			"Example [1]\n\n[1] http://example.com/",
+		},
+	}
+
+	for _, testCase := range testCases {
+		if msg, err := wantString(testCase.input, testCase.output, Options{CitationStyleLinks: true}); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
 func TestImageAltTags(t *testing.T) {
 	testCases := []struct {
 		input  string

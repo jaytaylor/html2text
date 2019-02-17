@@ -2,6 +2,7 @@ package html2text
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -15,8 +16,9 @@ import (
 
 // Options provide toggles and overrides to control specific rendering behaviors.
 type Options struct {
-	PrettyTables bool // Turns on pretty ASCII rendering for table elements.
-	OmitLinks    bool // Turns on omitting links
+	PrettyTables       bool // Turns on pretty ASCII rendering for table elements.
+	OmitLinks          bool // Turns on omitting links
+	CitationStyleLinks bool // Uses citation style links like [1]
 }
 
 // FromHTMLNode renders text output from a pre-parsed HTML document.
@@ -27,16 +29,27 @@ func FromHTMLNode(doc *html.Node, o ...Options) (string, error) {
 	}
 
 	ctx := textifyTraverseContext{
-		buf:     bytes.Buffer{},
-		options: options,
+		buf:         bytes.Buffer{},
+		options:     options,
+		citationMap: map[int]string{},
 	}
 	if err := ctx.traverse(doc); err != nil {
 		return "", err
 	}
 
-	text := strings.TrimSpace(newlineRe.ReplaceAllString(
-		strings.Replace(ctx.buf.String(), "\n ", "\n", -1), "\n\n"),
+	text := ctx.buf.String()
+
+	if ctx.options.CitationStyleLinks {
+		text += "\n\n"
+		for id, href := range ctx.citationMap {
+			text += fmt.Sprintf("[%d] %s\n", id, href)
+		}
+	}
+
+	text = strings.TrimSpace(newlineRe.ReplaceAllString(
+		strings.Replace(text, "\n ", "\n", -1), "\n\n"),
 	)
+
 	return text, nil
 }
 
@@ -81,6 +94,8 @@ type textifyTraverseContext struct {
 	blockquoteLevel int
 	lineLength      int
 	isPre           bool
+	citationCount   int
+	citationMap     map[int]string
 }
 
 // tableTraverseContext holds table ASCII-form related context.
@@ -212,7 +227,13 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 			attrVal = ctx.normalizeHrefLink(attrVal)
 			// Don't print link href if it matches link element content or if the link is empty.
 			if !ctx.options.OmitLinks && attrVal != "" && linkText != attrVal {
-				hrefLink = "( " + attrVal + " )"
+				if ctx.options.CitationStyleLinks {
+					ctx.citationCount += 1
+					ctx.citationMap[ctx.citationCount] = attrVal
+					hrefLink = fmt.Sprintf("[%d]", ctx.citationCount)
+				} else {
+					hrefLink = "( " + attrVal + " )"
+				}
 			}
 		}
 
