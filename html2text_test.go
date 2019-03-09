@@ -334,7 +334,8 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 
 	for _, testCase := range testCases {
 		options := Options{
-			PrettyTables: true,
+			PrettyTables:        true,
+			PrettyTablesOptions: NewPrettyTablesOptions(),
 		}
 		// Check pretty tabular ASCII version.
 		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
