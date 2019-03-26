@@ -669,6 +669,10 @@ func TestDiv(t *testing.T) {
 			"Test 1<div>Test 2</div> <div>Test 3</div>Test 4",
 			"Test 1\nTest 2\nTest 3\nTest 4",
 		},
+		{
+			"Test 1<div>&nbsp;Test 2&nbsp;</div>",
+			"Test 1\nTest 2",
+		},
 	}
 
 	for _, testCase := range testCases {
