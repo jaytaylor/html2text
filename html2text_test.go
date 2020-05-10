@@ -543,6 +543,14 @@ func TestCitationStyleLinks(t *testing.T) {
 			"Link",
 		},
 		{
+			`<a href="http://example1.com/">Link1</a><a href="http://example2.com/">Link2</a>`,
+			"Link1 [1] Link2 [2]\n\n[1] http://example1.com/\n[2] http://example2.com/",
+		},
+		{
+			`<a href="http://example1.com/">Link1</a> (<a href="http://example2.com/">Link2</a>)`,
+			"Link1 [1] (Link2 [2])\n\n[1] http://example1.com/\n[2] http://example2.com/",
+		},
+		{
 			`<a href="http://example1.com/">Link1</a>? <a href="http://example2.com/">Link2</a>!`,
 			"Link1 [1]? Link2 [2]!\n\n[1] http://example1.com/\n[2] http://example2.com/",
 		},
