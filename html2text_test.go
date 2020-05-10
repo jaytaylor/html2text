@@ -536,31 +536,31 @@ func TestCitationStyleLinks(t *testing.T) {
 		},
 		{
 			`<a href="http://example.com/"></a>`,
-			"[1] \n\n[1] http://example.com/",
+			"[1]\n\n[1] http://example.com/",
 		},
 		{
 			`<a href="">Link</a>`,
 			"Link",
 		},
 		{
-			`<a href="http://example1.com/">Link1</a><a href="http://example2.com/">Link2</a>`,
-			"Link1 [1] Link2 [2] \n\n[1] http://example1.com/\n[2] http://example2.com/",
+			`<a href="http://example1.com/">Link1</a>? <a href="http://example2.com/">Link2</a>!`,
+			"Link1 [1]? Link2 [2]!\n\n[1] http://example1.com/\n[2] http://example2.com/",
 		},
 		{
 			`<a href="http://example1.com/">Link1</a><a href="http://example1.com/">Link1 again</a>`,
-			"Link1 [1] Link1 again [1] \n\n[1] http://example1.com/",
+			"Link1 [1] Link1 again [1]\n\n[1] http://example1.com/",
 		},
 		{
 			`<a href="http://example.com/"><span class="a">Link</span></a>`,
-			"Link [1] \n\n[1] http://example.com/",
+			"Link [1]\n\n[1] http://example.com/",
 		},
 		{
 			"<a href='http://example.com/'>\n\t<span class='a'>Link</span>\n\t</a>",
-			"Link [1] \n\n[1] http://example.com/",
+			"Link [1]\n\n[1] http://example.com/",
 		},
 		{
 			`<a href="http://example.com/"><img src="http://example.ru/hello.jpg" alt="Example"></a>`,
-			"Example [1] \n\n[1] http://example.com/",
+			"Example [1]\n\n[1] http://example.com/",
 		},
 	}
 

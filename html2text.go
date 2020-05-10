@@ -530,7 +530,7 @@ func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 }
 
 func formatCitation(idx int) string {
-	return fmt.Sprintf("[%d] ", idx)
+	return fmt.Sprintf("[%d]", idx)
 }
 
 func (ctx *textifyTraverseContext) addCitation(url string) string {
@@ -558,6 +558,7 @@ func (ctx *textifyTraverseContext) emitCitations() {
 
 	for i, link := range links {
 		ctx.buf.WriteString(formatCitation(i + 1))
+		ctx.buf.WriteByte(' ')
 		ctx.buf.WriteString(link)
 		ctx.buf.WriteByte('\n')
 	}
