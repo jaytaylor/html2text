@@ -2,6 +2,7 @@ package html2text
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -18,6 +19,7 @@ type Options struct {
 	PrettyTables        bool                 // Turns on pretty ASCII rendering for table elements.
 	PrettyTablesOptions *PrettyTablesOptions // Configures pretty ASCII rendering for table elements.
 	OmitLinks           bool                 // Turns on omitting links
+	CitationStyleLinks  bool                 // Uses citation style links like [1]
 }
 
 // PrettyTablesOptions overrides tablewriter behaviors
@@ -70,11 +72,16 @@ func FromHTMLNode(doc *html.Node, o ...Options) (string, error) {
 	}
 
 	ctx := textifyTraverseContext{
-		buf:     bytes.Buffer{},
-		options: options,
+		buf:         bytes.Buffer{},
+		options:     options,
+		citationMap: map[string]int{},
 	}
 	if err := ctx.traverse(doc); err != nil {
 		return "", err
+	}
+
+	if ctx.options.CitationStyleLinks && ctx.citationCount > 0 {
+		ctx.emitCitations()
 	}
 
 	text := strings.TrimSpace(newlineRe.ReplaceAllString(
@@ -124,6 +131,8 @@ type textifyTraverseContext struct {
 	blockquoteLevel int
 	lineLength      int
 	isPre           bool
+	citationCount   int
+	citationMap     map[string]int
 }
 
 // tableTraverseContext holds table ASCII-form related context.
@@ -255,7 +264,11 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 			attrVal = ctx.normalizeHrefLink(attrVal)
 			// Don't print link href if it matches link element content or if the link is empty.
 			if !ctx.options.OmitLinks && attrVal != "" && linkText != attrVal {
-				hrefLink = "( " + attrVal + " )"
+				if ctx.options.CitationStyleLinks {
+					hrefLink = ctx.addCitation(attrVal)
+				} else {
+					hrefLink = "( " + attrVal + " )"
+				}
 			}
 		}
 
@@ -418,6 +431,25 @@ func (ctx *textifyTraverseContext) traverseChildren(node *html.Node) error {
 	return nil
 }
 
+// Tests r for being a character where no space should be inserted in front of.
+func punctNoSpaceBefore(r rune) bool {
+	switch r {
+	case '.', ',', ';', '!', '?', ')', ']', '>':
+		return true
+	default:
+		return false
+	}
+}
+
+// Tests r for being a character where no space should be inserted after.
+func punctNoSpaceAfter(r rune) bool {
+	switch r {
+	case '(', '[', '<':
+		return true
+	default:
+		return false
+	}
+}
 func (ctx *textifyTraverseContext) emit(data string) error {
 	if data == "" {
 		return nil
@@ -428,14 +460,14 @@ func (ctx *textifyTraverseContext) emit(data string) error {
 	)
 	for _, line := range lines {
 		runes := []rune(line)
-		startsWithSpace := unicode.IsSpace(runes[0])
-		if !startsWithSpace && !ctx.endsWithSpace && !strings.HasPrefix(data, ".") {
+		startsWithSpace := unicode.IsSpace(runes[0]) || punctNoSpaceBefore(runes[0])
+		if !startsWithSpace && !ctx.endsWithSpace {
 			if err = ctx.buf.WriteByte(' '); err != nil {
 				return err
 			}
 			ctx.lineLength++
 		}
-		ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1])
+		ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1]) || punctNoSpaceAfter(runes[len(runes)-1])
 		for _, c := range line {
 			if _, err = ctx.buf.WriteString(string(c)); err != nil {
 				return err
@@ -501,6 +533,41 @@ func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 	link = strings.TrimSpace(link)
 	link = strings.TrimPrefix(link, "mailto:")
 	return link
+}
+
+func formatCitation(idx int) string {
+	return fmt.Sprintf("[%d]", idx)
+}
+
+func (ctx *textifyTraverseContext) addCitation(url string) string {
+	idx, ok := ctx.citationMap[url]
+
+	if !ok {
+		ctx.citationCount += 1
+		idx = ctx.citationCount
+		ctx.citationMap[url] = idx
+	}
+
+	return formatCitation(idx)
+}
+
+func (ctx *textifyTraverseContext) emitCitations() {
+	// this method writes to the buffer directly instead of using `emit`, b/c we do not want to split long links
+	ctx.buf.WriteString("\n\n")
+
+	// citations are ordered by link --> bring them into the correct order first
+	links := make([]string, ctx.citationCount)
+
+	for k, v := range ctx.citationMap {
+		links[v-1] = k // arrays are 0-based, our citations are 1-based
+	}
+
+	for i, link := range links {
+		ctx.buf.WriteString(formatCitation(i + 1))
+		ctx.buf.WriteByte(' ')
+		ctx.buf.WriteString(link)
+		ctx.buf.WriteByte('\n')
+	}
 }
 
 // renderEachChild visits each direct child of a node and collects the sequence of
