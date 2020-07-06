@@ -13,11 +13,21 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+var DefaultOmitAtoms = map[atom.Atom]bool{
+	atom.Footer:   true,
+	atom.Cite:     true,
+	atom.Noscript: true,
+}
+
 // Options provide toggles and overrides to control specific rendering behaviors.
 type Options struct {
 	PrettyTables        bool                 // Turns on pretty ASCII rendering for table elements.
 	PrettyTablesOptions *PrettyTablesOptions // Configures pretty ASCII rendering for table elements.
 	OmitLinks           bool                 // Turns on omitting links
+
+	// For the list of atoms that we'll not dive in.
+	OmitAtoms map[atom.Atom]bool
+	HonorPre  bool
 }
 
 // PrettyTablesOptions overrides tablewriter behaviors
@@ -146,6 +156,10 @@ func (tableCtx *tableTraverseContext) init() {
 func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 	ctx.justClosedDiv = false
 
+	if ctx.options.OmitAtoms[node.DataAtom] {
+		return nil
+	}
+
 	switch node.DataAtom {
 	case atom.Br:
 		return ctx.emit("\n")
@@ -273,7 +287,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		return ctx.traverseChildren(node)
 
 	case atom.Pre:
-		ctx.isPre = true
+		ctx.isPre = true && ctx.options.HonorPre
 		err := ctx.traverseChildren(node)
 		ctx.isPre = false
 		return err
