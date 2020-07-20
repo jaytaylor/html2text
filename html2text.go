@@ -33,6 +33,7 @@ type PrettyTablesOptions struct {
 	FooterAlignment      int
 	Alignment            int
 	ColumnAlignment      []int
+	NoWhiteSapce         bool
 	NewLine              string
 	HeaderLine           bool
 	RowLine              bool
@@ -54,6 +55,7 @@ func NewPrettyTablesOptions() *PrettyTablesOptions {
 		FooterAlignment:      tablewriter.ALIGN_DEFAULT,
 		Alignment:            tablewriter.ALIGN_DEFAULT,
 		ColumnAlignment:      []int{},
+		NoWhiteSapce:         false,
 		NewLine:              tablewriter.NEWLINE,
 		HeaderLine:           true,
 		RowLine:              false,
@@ -338,6 +340,7 @@ func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
 			table.SetRowLine(options.RowLine)
 			table.SetAutoMergeCells(options.AutoMergeCells)
 			table.SetBorders(options.Borders)
+			table.SetNoWhiteSpace(options.NoWhiteSapce)
 		}
 		table.SetHeader(ctx.tableCtx.header)
 		table.SetFooter(ctx.tableCtx.footer)
