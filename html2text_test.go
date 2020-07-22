@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 const destPath = "testdata"
@@ -337,6 +339,7 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 			PrettyTables:        true,
 			PrettyTablesOptions: NewPrettyTablesOptions(),
 		}
+
 		// Check pretty tabular ASCII version.
 		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
 			t.Error(err)
@@ -351,6 +354,79 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 			t.Log(msg)
 		}
 	}
+}
+
+func TestMinColWidthTable(t *testing.T) {
+	testCases := []struct {
+		input           string
+		tabularOutput   string
+		plaintextOutput string
+		alignment       string
+	}{
+		{
+			"<table><tr><td>Hello</td><td>World!</td></tr></table>",
+			// Empty table
+			// +--+--+
+			// |  |  |
+			// +--+--+
+			"+------------+------------+\n| Hello      | World!     |\n+------------+------------+",
+			"Hello World!",
+			"Left",
+		},
+		{
+			"<table><tr><td>Hello</td><td>World!</td></tr></table>",
+			// Empty table
+			// +--+--+
+			// |  |  |
+			// +--+--+
+			"+------------+------------+\n|      Hello |     World! |\n+------------+------------+",
+			"Hello World!",
+			"Right",
+		},
+		{
+			"<table><tr><td>Hello</td><td>World!</td></tr></table>",
+			// Empty table
+			// +--+--+
+			// |  |  |
+			// +--+--+
+			"+------------+------------+\n|   Hello    |   World!   |\n+------------+------------+",
+			"Hello World!",
+			"Center",
+		},
+	}
+
+	for _, testCase := range testCases {
+		options := Options{
+			PrettyTables:        true,
+			PrettyTablesOptions: NewPrettyTablesOptions(),
+		}
+		options.PrettyTablesOptions.MinColWidth = 10
+
+		switch testCase.alignment {
+		case "Left":
+			options.PrettyTablesOptions.Alignment = tablewriter.ALIGN_LEFT
+		case "Right":
+			options.PrettyTablesOptions.Alignment = tablewriter.ALIGN_RIGHT
+		case "Center":
+			options.PrettyTablesOptions.Alignment = tablewriter.ALIGN_CENTER
+		default:
+			options.PrettyTablesOptions.Alignment = tablewriter.ALIGN_DEFAULT
+		}
+		// Check pretty tabular ASCII version.
+		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+
+		// Check plain version.
+		if msg, err := wantString(testCase.input, testCase.plaintextOutput); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+
 }
 
 func TestStrippingLists(t *testing.T) {
