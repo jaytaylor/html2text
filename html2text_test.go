@@ -775,6 +775,10 @@ func TestIgnoreStylesScriptsHead(t *testing.T) {
 			`<html><head><title>Title</title></head><body></body></html>`,
 			"",
 		},
+		{
+			"<noscript><a href=\"/action/clickThrough?id=some_identifier\" target=\"_blank\"><img src=\"https://example.com/image/some_identifier\"></a></noscript>",
+			"",
+		},
 	}
 
 	for _, testCase := range testCases {
