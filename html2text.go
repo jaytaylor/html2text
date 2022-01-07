@@ -159,7 +159,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 
 		str := subCtx.buf.String()
 		if ctx.options.TextOnly {
-			return ctx.emit(str + ".\n\n")
+			return ctx.emit(str + "\n\n")
 		}
 		dividerLen := 0
 		for _, line := range strings.Split(str, "\n") {
