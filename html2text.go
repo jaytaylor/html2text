@@ -291,7 +291,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		ctx.isPre = false
 		return err
 
-	case atom.Style, atom.Script, atom.Head:
+	case atom.Style, atom.Script, atom.Head, atom.Noscript :
 		// Ignore the subtree.
 		return nil
 
