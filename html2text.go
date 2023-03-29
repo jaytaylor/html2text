@@ -2,7 +2,9 @@ package html2text
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"strings"
 	"unicode"
@@ -27,6 +29,7 @@ type PrettyTablesOptions struct {
 	AutoWrapText         bool
 	ReflowDuringAutoWrap bool
 	ColWidth             int
+	MinColWidth          int
 	ColumnSeparator      string
 	RowSeparator         string
 	CenterSeparator      string
@@ -34,6 +37,7 @@ type PrettyTablesOptions struct {
 	FooterAlignment      int
 	Alignment            int
 	ColumnAlignment      []int
+	NoWhiteSapce         bool
 	NewLine              string
 	HeaderLine           bool
 	RowLine              bool
@@ -55,6 +59,7 @@ func NewPrettyTablesOptions() *PrettyTablesOptions {
 		FooterAlignment:      tablewriter.ALIGN_DEFAULT,
 		Alignment:            tablewriter.ALIGN_DEFAULT,
 		ColumnAlignment:      []int{},
+		NoWhiteSapce:         false,
 		NewLine:              tablewriter.NEWLINE,
 		HeaderLine:           true,
 		RowLine:              false,
@@ -351,6 +356,7 @@ func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
 			table.SetRowLine(options.RowLine)
 			table.SetAutoMergeCells(options.AutoMergeCells)
 			table.SetBorders(options.Borders)
+			table.SetNoWhiteSpace(options.NoWhiteSapce)
 		}
 		table.SetHeader(ctx.tableCtx.header)
 		table.SetFooter(ctx.tableCtx.footer)
@@ -520,10 +526,42 @@ func (ctx *textifyTraverseContext) normalizeHrefLink(link string) string {
 // textuual representaitons separated by a single newline.
 func (ctx *textifyTraverseContext) renderEachChild(node *html.Node) (string, error) {
 	buf := &bytes.Buffer{}
+
+	l := ctx.options.PrettyTablesOptions.MinColWidth
+
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		s, err := FromHTMLNode(c, ctx.options)
 		if err != nil {
 			return "", err
+		}
+
+		// See if a minimum width has been specified and pad as necessary.
+		if l > 0 && len(s) < l {
+			c := 0
+			// Check alignment and pad appropriately.
+			switch ctx.options.PrettyTablesOptions.Alignment {
+			case tablewriter.ALIGN_LEFT:
+				c = l - len(s)
+				spc := strings.Repeat(" ", c)
+				s = fmt.Sprintf("%s%s", s, spc)
+			case tablewriter.ALIGN_RIGHT:
+				c = l - len(s)
+				spc := strings.Repeat(" ", c)
+				s = fmt.Sprintf("%s%s", spc, s)
+			case tablewriter.ALIGN_CENTER:
+				ls := len(s)
+				c := 0.0 // We need to use a float to have the division work properly here, so declare a local scope variable named c rather than use the int version of c from the parent.
+				c = math.Floor(float64(l-ls) / 2.0)
+				spc := strings.Repeat(" ", int(c))
+				s = fmt.Sprintf("%s%s", spc, s)
+				c = math.Ceil(float64(l-ls) / 2.0)
+				spc = strings.Repeat(" ", int(c))
+				s = fmt.Sprintf("%s%s", s, spc)
+			case tablewriter.ALIGN_DEFAULT: // Default to left alignment.
+				c = l - len(s)
+				spc := strings.Repeat(" ", c)
+				s = fmt.Sprintf("%s%s", s, spc)
+			}
 		}
 		if _, err = buf.WriteString(s); err != nil {
 			return "", err
@@ -535,6 +573,22 @@ func (ctx *textifyTraverseContext) renderEachChild(node *html.Node) (string, err
 		}
 	}
 	return buf.String(), nil
+}
+
+// largestChildWidth - Returns the width (in characters) of the largest child of a node.
+func (ctx *textifyTraverseContext) largestChildWidth(node *html.Node) (int, error) {
+	l := 0
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		s, err := FromHTMLNode(c, ctx.options)
+		if err != nil {
+			return l, err
+		}
+
+		if len(s) > l {
+			l = len(s)
+		}
+	}
+	return l, nil
 }
 
 func getAttrVal(node *html.Node, attrName string) string {
