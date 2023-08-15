@@ -100,6 +100,44 @@ func TestStrippingWhitespace(t *testing.T) {
 	}
 }
 
+func TestPreservingWhitespace(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"test  text",
+			"test  text",
+		},
+		{
+			"  \ttext\ntext\n",
+			"text\ntext",
+		},
+		{
+			"  \na \n\t \n \n a \t",
+			"a \n\t \n\na",
+		},
+		{
+			"test        text",
+			"test        text",
+		},
+		{
+			"test&nbsp;&nbsp;&nbsp; text&nbsp;",
+			"test    text",
+		},
+	}
+
+	for _, testCase := range testCases {
+		if msg, err := wantString(testCase.input, testCase.output, html2text.Options{
+			PreserveWhitespace: true,
+		}); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
 func TestParagraphsAndBreaks(t *testing.T) {
 	testCases := []struct {
 		input  string
