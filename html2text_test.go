@@ -1,4 +1,4 @@
-package html2text
+package html2text_test
 
 import (
 	"bytes"
@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/jaytaylor/html2text"
 )
 
 const destPath = "testdata"
@@ -49,7 +51,7 @@ func TestParseUTF8(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		text, err := FromReader(bytes.NewReader(bs))
+		text, err := html2text.FromReader(bytes.NewReader(bs))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -91,6 +93,44 @@ func TestStrippingWhitespace(t *testing.T) {
 
 	for _, testCase := range testCases {
 		if msg, err := wantString(testCase.input, testCase.output); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
+func TestPreservingWhitespace(t *testing.T) {
+	testCases := []struct {
+		input  string
+		output string
+	}{
+		{
+			"test  text",
+			"test  text",
+		},
+		{
+			"  \ttext\ntext\n",
+			"text\ntext",
+		},
+		{
+			"  \na \n\t \n \n a \t",
+			"a \n\t \n\na",
+		},
+		{
+			"test        text",
+			"test        text",
+		},
+		{
+			"test&nbsp;&nbsp;&nbsp; text&nbsp;",
+			"test    text",
+		},
+	}
+
+	for _, testCase := range testCases {
+		if msg, err := wantString(testCase.input, testCase.output, html2text.Options{
+			PreserveWhitespace: true,
+		}); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)
@@ -333,9 +373,9 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 	}
 
 	for _, testCase := range testCases {
-		options := Options{
+		options := html2text.Options{
 			PrettyTables:        true,
-			PrettyTablesOptions: NewPrettyTablesOptions(),
+			PrettyTablesOptions: html2text.NewPrettyTablesOptions(),
 		}
 		// Check pretty tabular ASCII version.
 		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
@@ -513,7 +553,7 @@ func TestOmitLinks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		if msg, err := wantString(testCase.input, testCase.output, Options{OmitLinks: true}); err != nil {
+		if msg, err := wantString(testCase.input, testCase.output, html2text.Options{OmitLinks: true}); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)
@@ -904,16 +944,16 @@ func (m ExactStringMatcher) String() string {
 	return string(m)
 }
 
-func wantRegExp(input string, outputRE string, options ...Options) (string, error) {
+func wantRegExp(input string, outputRE string, options ...html2text.Options) (string, error) {
 	return match(input, RegexpStringMatcher(outputRE), options...)
 }
 
-func wantString(input string, output string, options ...Options) (string, error) {
+func wantString(input string, output string, options ...html2text.Options) (string, error) {
 	return match(input, ExactStringMatcher(output), options...)
 }
 
-func match(input string, matcher StringMatcher, options ...Options) (string, error) {
-	text, err := FromString(input, options...)
+func match(input string, matcher StringMatcher, options ...html2text.Options) (string, error) {
+	text, err := html2text.FromString(input, options...)
 	if err != nil {
 		return "", err
 	}
@@ -1000,7 +1040,7 @@ func Example() {
 	</body>
 </html>`
 
-	text, err := FromString(inputHTML, Options{PrettyTables: true})
+	text, err := html2text.FromString(inputHTML, html2text.Options{PrettyTables: true})
 	if err != nil {
 		panic(err)
 	}

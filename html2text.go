@@ -18,6 +18,7 @@ type Options struct {
 	PrettyTables        bool                 // Turns on pretty ASCII rendering for table elements.
 	PrettyTablesOptions *PrettyTablesOptions // Configures pretty ASCII rendering for table elements.
 	OmitLinks           bool                 // Turns on omitting links
+	PreserveWhitespace  bool                 // Turns on whitespace preservation.
 	TextOnly            bool                 // Returns only plain text
 }
 
@@ -408,10 +409,10 @@ func (ctx *textifyTraverseContext) traverse(node *html.Node) error {
 		return ctx.traverseChildren(node)
 
 	case html.TextNode:
-		var data string
+		data := node.Data
 		if ctx.isPre {
 			data = node.Data
-		} else {
+		} else if !ctx.options.PreserveWhitespace {
 			data = strings.TrimSpace(spacingRe.ReplaceAllString(node.Data, " "))
 		}
 		return ctx.emit(data)
@@ -442,19 +443,25 @@ func (ctx *textifyTraverseContext) emit(data string) error {
 	for _, line := range lines {
 		runes := []rune(line)
 		startsWithSpace := unicode.IsSpace(runes[0])
-		if !startsWithSpace && !ctx.endsWithSpace && !strings.HasPrefix(data, ".") {
+		missingSpaceSeperator := !startsWithSpace && !ctx.endsWithSpace && !strings.HasPrefix(data, ".")
+		if !ctx.options.PreserveWhitespace && missingSpaceSeperator {
 			if err = ctx.buf.WriteByte(' '); err != nil {
 				return err
 			}
 			ctx.lineLength++
 		}
 		ctx.endsWithSpace = unicode.IsSpace(runes[len(runes)-1])
-		for _, c := range line {
-			if _, err = ctx.buf.WriteString(string(c)); err != nil {
+		for _, line := range strings.SplitAfter(line, "\n") {
+			if len(line) == 0 {
+				continue
+			}
+
+			if _, err = ctx.buf.WriteString(line); err != nil {
 				return err
 			}
-			ctx.lineLength++
-			if c == '\n' {
+			ctx.lineLength += len(line)
+
+			if line[len(line)-1] == '\n' {
 				ctx.lineLength = 0
 				if ctx.prefix != "" {
 					if _, err = ctx.buf.WriteString(ctx.prefix); err != nil {
