@@ -241,7 +241,7 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		}
 		str := subCtx.buf.String()
 		if ctx.options.TextOnly {
-			return ctx.emit(str + ".")
+			return ctx.emit(str)
 		}
 		return ctx.emit("*" + str + "*")
 
