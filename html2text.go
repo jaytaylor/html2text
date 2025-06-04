@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/ssor/bom"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -21,45 +22,175 @@ type Options struct {
 	TextOnly            bool                 // Returns only plain text
 }
 
+// Border controls tablewriter borders. It uses simple bools instead of tablewriters `State`
+type Border struct {
+	Left, Right, Bottom, Top bool
+}
+
+func (b Border) withStates() tw.Border {
+	return tw.Border{
+		Left:   asState(b.Left),
+		Right:  asState(b.Right),
+		Bottom: asState(b.Bottom),
+		Top:    asState(b.Top),
+	}
+}
+
+type BorderStyle struct {
+	ColumnSeparator string
+	RowSeparator    string
+	CenterSeparator string
+}
+
+func (b BorderStyle) Name() string {
+	return "html2text"
+}
+
+func (b BorderStyle) Center() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) Row() string {
+	return b.RowSeparator
+}
+
+func (b BorderStyle) Column() string {
+	return b.ColumnSeparator
+}
+
+func (b BorderStyle) TopLeft() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) TopMid() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) TopRight() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) MidLeft() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) MidRight() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) BottomLeft() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) BottomMid() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) BottomRight() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) HeaderLeft() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) HeaderMid() string {
+	return b.CenterSeparator
+}
+
+func (b BorderStyle) HeaderRight() string {
+	return b.CenterSeparator
+}
+
+var defaultBorderStyle = BorderStyle{
+	ColumnSeparator: "|",
+	RowSeparator:    "-",
+	CenterSeparator: "+",
+}
+
 // PrettyTablesOptions overrides tablewriter behaviors
 type PrettyTablesOptions struct {
-	AutoFormatHeader     bool
-	AutoWrapText         bool
+	AutoFormatHeader bool
+	AutoWrapText     bool
+	// Deprecated. Tablewriter always assumes this to be `true`
 	ReflowDuringAutoWrap bool
 	ColWidth             int
 	ColumnSeparator      string
 	RowSeparator         string
 	CenterSeparator      string
-	HeaderAlignment      int
-	FooterAlignment      int
-	Alignment            int
-	ColumnAlignment      []int
-	NewLine              string
-	HeaderLine           bool
-	RowLine              bool
-	AutoMergeCells       bool
-	Borders              tablewriter.Border
+	HeaderAlignment      tw.Align
+	FooterAlignment      tw.Align
+	Alignment            tw.Align
+	ColumnAlignment      tw.Alignment
+	// Deprecated. Tablewriter always assumes this to be `\n`
+	NewLine        string
+	HeaderLine     bool
+	RowLine        bool
+	AutoMergeCells bool
+	Borders        Border
+}
+
+func (p *PrettyTablesOptions) wrapMode() int {
+	if p.AutoWrapText {
+		return tw.WrapNormal
+	} else {
+		return tw.WrapNone
+	}
+}
+
+func (p *PrettyTablesOptions) borderStyle() BorderStyle {
+	return BorderStyle{
+		ColumnSeparator: p.ColumnSeparator,
+		RowSeparator:    p.RowSeparator,
+		CenterSeparator: p.CenterSeparator,
+	}
+}
+
+func (p *PrettyTablesOptions) renderSettings() tw.Settings {
+	return tw.Settings{
+		Lines: tw.Lines{
+			ShowHeaderLine: asState(p.HeaderLine),
+		},
+		Separators: tw.Separators{
+			BetweenRows: asState(p.RowLine),
+		},
+	}
+}
+
+func (p *PrettyTablesOptions) mergeMode() int {
+	if p.AutoMergeCells {
+		return tw.MergeVertical
+	} else {
+		return tw.MergeNone
+	}
+}
+
+func asState(b bool) tw.State {
+	// TableWriter does not provide this by default :(
+	if b {
+		return tw.On
+	} else {
+		return tw.Off
+	}
 }
 
 // NewPrettyTablesOptions creates PrettyTablesOptions with default settings
 func NewPrettyTablesOptions() *PrettyTablesOptions {
 	return &PrettyTablesOptions{
-		AutoFormatHeader:     true,
-		AutoWrapText:         true,
-		ReflowDuringAutoWrap: true,
-		ColWidth:             tablewriter.MAX_ROW_WIDTH,
-		ColumnSeparator:      tablewriter.COLUMN,
-		RowSeparator:         tablewriter.ROW,
-		CenterSeparator:      tablewriter.CENTER,
-		HeaderAlignment:      tablewriter.ALIGN_DEFAULT,
-		FooterAlignment:      tablewriter.ALIGN_DEFAULT,
-		Alignment:            tablewriter.ALIGN_DEFAULT,
-		ColumnAlignment:      []int{},
-		NewLine:              tablewriter.NEWLINE,
-		HeaderLine:           true,
-		RowLine:              false,
-		AutoMergeCells:       false,
-		Borders:              tablewriter.Border{Left: true, Right: true, Bottom: true, Top: true},
+		AutoFormatHeader: true,
+		AutoWrapText:     true,
+		ColWidth:         32, // old tablewriter.MAX_ROW_WIDTH + borders now count into width
+		ColumnSeparator:  defaultBorderStyle.ColumnSeparator,
+		RowSeparator:     defaultBorderStyle.RowSeparator,
+		CenterSeparator:  defaultBorderStyle.CenterSeparator,
+		HeaderAlignment:  tw.AlignCenter,
+		FooterAlignment:  tw.AlignCenter,
+		Alignment:        tw.AlignDefault,
+		ColumnAlignment:  make(tw.Alignment, 0),
+		HeaderLine:       true,
+		RowLine:          false,
+		AutoMergeCells:   false,
+		Borders:          Border{Left: true, Right: true, Bottom: true, Top: true},
 	}
 }
 
@@ -68,6 +199,11 @@ func FromHTMLNode(doc *html.Node, o ...Options) (string, error) {
 	var options Options
 	if len(o) > 0 {
 		options = o[0]
+	}
+
+	if options.PrettyTables && options.PrettyTablesOptions == nil {
+		// defaults need to make explicit as they are no longer identical with tablewriter
+		options.PrettyTablesOptions = NewPrettyTablesOptions()
 	}
 
 	ctx := textifyTraverseContext{
@@ -333,31 +469,42 @@ func (ctx *textifyTraverseContext) handleTableElement(node *html.Node) error {
 
 		buf := &bytes.Buffer{}
 		table := tablewriter.NewWriter(buf)
-		if ctx.options.PrettyTablesOptions != nil {
-			options := ctx.options.PrettyTablesOptions
-			table.SetAutoFormatHeaders(options.AutoFormatHeader)
-			table.SetAutoWrapText(options.AutoWrapText)
-			table.SetReflowDuringAutoWrap(options.ReflowDuringAutoWrap)
-			table.SetColWidth(options.ColWidth)
-			table.SetColumnSeparator(options.ColumnSeparator)
-			table.SetRowSeparator(options.RowSeparator)
-			table.SetCenterSeparator(options.CenterSeparator)
-			table.SetHeaderAlignment(options.HeaderAlignment)
-			table.SetFooterAlignment(options.FooterAlignment)
-			table.SetAlignment(options.Alignment)
-			table.SetColumnAlignment(options.ColumnAlignment)
-			table.SetNewLine(options.NewLine)
-			table.SetHeaderLine(options.HeaderLine)
-			table.SetRowLine(options.RowLine)
-			table.SetAutoMergeCells(options.AutoMergeCells)
-			table.SetBorders(options.Borders)
+
+		options := ctx.options.PrettyTablesOptions
+		cfg := tablewriter.NewConfigBuilder()
+
+		cfg.WithHeaderAutoFormat(asState(options.AutoFormatHeader)).WithFooterAutoFormat(asState(options.AutoFormatHeader)).
+			WithRowAutoWrap(options.wrapMode()).WithHeaderAutoWrap(options.wrapMode()).WithFooterAutoWrap(options.wrapMode()).
+			WithRowMaxWidth(options.ColWidth).
+			WithHeaderAlignment(options.HeaderAlignment).
+			WithFooterAlignment(options.FooterAlignment).
+			WithRowAlignment(options.Alignment).
+			WithRowMergeMode(options.mergeMode())
+
+		if len(options.ColumnAlignment) > 0 {
+			cfg.Row().Alignment().WithPerColumn(options.ColumnAlignment)
 		}
-		table.SetHeader(ctx.tableCtx.header)
-		table.SetFooter(ctx.tableCtx.footer)
-		table.AppendBulk(ctx.tableCtx.body)
+
+		rendition := tw.Rendition{
+			Borders:  options.Borders.withStates(),
+			Symbols:  options.borderStyle(),
+			Settings: options.renderSettings(),
+		}
+
+		table.Options(
+			tablewriter.WithConfig(cfg.Build()),
+			tablewriter.WithRendition(rendition))
+
+		table.Header(ctx.tableCtx.header)
+		table.Footer(ctx.tableCtx.footer)
+		if err := table.Bulk(ctx.tableCtx.body); err != nil {
+			return err
+		}
 
 		// Render the table using ASCII.
-		table.Render()
+		if err := table.Render(); err != nil {
+			return err
+		}
 		if err := ctx.emit(buf.String()); err != nil {
 			return err
 		}
