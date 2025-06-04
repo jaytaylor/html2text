@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 const destPath = "testdata"
@@ -346,6 +349,54 @@ Table 2 Header 1 Table 2 Header 2 Table 2 Footer 1 Table 2 Footer 2 Table 2 Row 
 
 		// Check plain version.
 		if msg, err := wantString(testCase.input, testCase.plaintextOutput); err != nil {
+			t.Error(err)
+		} else if len(msg) > 0 {
+			t.Log(msg)
+		}
+	}
+}
+
+func TestTablesWithDirectConfiguration(t *testing.T) {
+	testCases := []struct {
+		input         string
+		tabularOutput string
+	}{
+		{
+			`<table>
+				<thead>
+					<tr><th>Header 1</th><th>Header 2</th></tr>
+				</thead>
+				<tfoot>
+					<tr><td>Footer 1</td><td>Footer 2</td></tr>
+				</tfoot>
+				<tbody>
+					<tr><td>Row 1 Col 1</td><td>Row 1 Col 2</td></tr>
+					<tr><td>Row 2 Col 1</td><td>Row 2 Col 2</td></tr>
+				</tbody>
+			</table>`,
+			`┌─────────────┬─────────────┐
+│    HEADER 1 │    HEADER 2 │
+├─────────────┼─────────────┤
+│ Row 1 Col 1 │ Row 1 Col 2 │
+│ Row 2 Col 1 │ Row 2 Col 2 │
+└─────────────┴─────────────┘`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		options := Options{
+			PrettyTables: true,
+			PrettyTablesOptions: &PrettyTablesOptions{
+				Configuration: func(table *tablewriter.Table) {
+					table.Options(
+						tablewriter.WithHeaderAlignment(tw.AlignRight),
+						tablewriter.WithFooterControl(tw.Control{Hide: tw.On}),
+					)
+				},
+			},
+		}
+		// Check pretty tabular ASCII version.
+		if msg, err := wantString(testCase.input, testCase.tabularOutput, options); err != nil {
 			t.Error(err)
 		} else if len(msg) > 0 {
 			t.Log(msg)

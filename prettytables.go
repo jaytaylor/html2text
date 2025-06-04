@@ -25,6 +25,9 @@ type PrettyTablesOptions struct {
 	RowLine        bool
 	AutoMergeCells bool
 	Borders        Border
+	// Configuration allows to directly manipulate the `Table` with all what [tablewriter] offers.
+	// Setting this ignores all the rest of the settings of this struct.
+	Configuration func(table *tablewriter.Table)
 }
 
 // NewPrettyTablesOptions creates PrettyTablesOptions with default settings
@@ -48,6 +51,11 @@ func NewPrettyTablesOptions() *PrettyTablesOptions {
 }
 
 func (p *PrettyTablesOptions) configureTable(table *tablewriter.Table) {
+	if p.Configuration != nil {
+		p.Configuration(table)
+		return
+	}
+
 	cfg := tablewriter.NewConfigBuilder()
 
 	cfg.WithHeaderAutoFormat(asState(p.AutoFormatHeader)).WithFooterAutoFormat(asState(p.AutoFormatHeader)).
