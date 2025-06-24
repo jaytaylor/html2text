@@ -19,6 +19,7 @@ type Options struct {
 	PrettyTablesOptions *PrettyTablesOptions // Configures pretty ASCII rendering for table elements.
 	OmitLinks           bool                 // Turns on omitting links
 	TextOnly            bool                 // Returns only plain text
+	TextOnlyWithLinks  bool                  // Returns only plain text, but includes links
 }
 
 // PrettyTablesOptions overrides tablewriter behaviors
@@ -68,6 +69,11 @@ func FromHTMLNode(doc *html.Node, o ...Options) (string, error) {
 	var options Options
 	if len(o) > 0 {
 		options = o[0]
+	}
+
+	// If TextOnlyWithLinks is set, always enable TextOnly logic as well
+	if options.TextOnlyWithLinks {
+		options.TextOnly = true
 	}
 
 	ctx := textifyTraverseContext{
@@ -266,9 +272,11 @@ func (ctx *textifyTraverseContext) handleElement(node *html.Node) error {
 		hrefLink := ""
 		if attrVal := getAttrVal(node, "href"); attrVal != "" {
 			attrVal = ctx.normalizeHrefLink(attrVal)
-			// Don't print link href if it matches link element content or if the link is empty.
-			if (attrVal != "" && linkText != attrVal) && !ctx.options.OmitLinks && !ctx.options.TextOnly {
-				hrefLink = "( " + attrVal + " )"
+
+			if attrVal != "" && linkText != attrVal {
+				if ctx.options.TextOnlyWithLinks || (!ctx.options.OmitLinks && !ctx.options.TextOnly) {
+					hrefLink = "( " + attrVal + " )"
+				}
 			}
 		}
 
