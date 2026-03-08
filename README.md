@@ -21,7 +21,7 @@ It requires go 1.x or newer ;)
 ## Download the package
 
 ```bash
-go get jaytaylor.com/html2text
+go get github.com/jaytaylor/html2text
 ```
 
 ## Example usage
